@@ -110,11 +110,12 @@ export default function RadialPredictor() {
 
       if (input.trim() === "") {
         let starterLetters = [];
-        if (letterBi && letterBi[' ']) {
-          starterLetters = (letterBi[' '] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+        const lb = letterBi || {};
+        if (lb[' ']) {
+          starterLetters = (lb[' '] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
         } else {
           const counts = {};
-          Object.values(letterBi || {}).forEach((arr) => {
+          Object.values(lb || {}).forEach((arr) => {
             (arr || []).forEach((p) => {
               const ch = Array.isArray(p) ? String(p[0]) : String(p);
               const c = Array.isArray(p) ? Number(p[1] || 0) : 0;
@@ -122,8 +123,53 @@ export default function RadialPredictor() {
             });
           });
           starterLetters = Object.entries(counts).map(([k, v]) => [k, v]).sort((a, b) => b[1] - a[1]);
-          allCandidates = starterLetters;
         }
+        // Fallback common letters if starterLetters empty
+        if (!starterLetters || starterLetters.length === 0) {
+          const common = ['e','t','a','o','i','n','s','r'];
+          starterLetters = common.map((ch, i) => [ch, 100 - i]);
+        }
+        allCandidates = starterLetters.slice(0, 8);
+      } else {
+        // Handle non-empty input
+        const trimmed = input.trim();
+        const lastChar = trimmed.slice(-1);
+        const lastTwo = trimmed.slice(-2);
+        
+        // Get letter suggestions
+        let letterSuggestions = [];
+        if (letterTri && letterTri[lastTwo]) {
+          letterSuggestions = (letterTri[lastTwo] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+        } else if (letterBi && letterBi[lastChar]) {
+          letterSuggestions = (letterBi[lastChar] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+        }
+        console.log("Letter suggestions:", letterSuggestions);
+        
+        // Get word completions if input ends with space
+        let wordSuggestions = [];
+        if (trimmed.endsWith(' ') && wordBi) {
+          const prefix = trimmed.slice(0, -1).split(' ').pop() || '';
+          console.log("Prefix for word suggestions:", prefix);
+          if (wordBi[prefix]) {
+            wordSuggestions = (wordBi[prefix] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            console.log("Word suggestions:", wordSuggestions);
+            // Take up to 4 word suggestions when space is pressed
+            wordSuggestions = wordSuggestions.slice(0, 4);
+          } else {
+            console.log("No wordBi entry for prefix:", prefix);
+          }
+        } else if (wordBi) {
+          // For non-space input, show max 2 word suggestions only if highly probable
+          const prefix = trimmed.split(' ').pop() || '';
+          if (wordBi[prefix]) {
+            wordSuggestions = (wordBi[prefix] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            // Filter to highly probable (e.g., count > 10) and take up to 2
+            wordSuggestions = wordSuggestions.filter(([_, count]) => count > 10).slice(0, 2);
+          }
+        }
+        
+        // Combine: words first, then letters, up to 8 total
+        allCandidates = [...wordSuggestions, ...letterSuggestions].slice(0, 8);
       }
 
       const seen = new Map();
@@ -133,12 +179,17 @@ export default function RadialPredictor() {
           seen.set(key, cnt || 0);
         }
       }
-      const finalCandidates = Array.from(seen.entries()).map(([k, v]) => [k, v]).slice(0, 128);
+      const finalCandidates = Array.from(seen.entries()).map(([k, v]) => [k, v]);
+      // Ensure space is always an option
+      if (!seen.has(" ")) {
+        finalCandidates.unshift([" ", 1]);
+      }
+      const slicedCandidates = finalCandidates.slice(0, 128);
 
-      console.log("Final candidates:", finalCandidates);
-      setCandidates(finalCandidates);
+      console.log("Final candidates:", slicedCandidates);
+      setCandidates(slicedCandidates);
       setPageOffset(0);
-      setPredictions(finalCandidates.slice(0, maxTotal));
+      setPredictions(slicedCandidates.slice(0, maxTotal));
     } catch (err) {
       console.error('Prediction error', err);
       setCandidates([]);
@@ -157,20 +208,58 @@ export default function RadialPredictor() {
     setPredictions(candidates.slice(pageOffset, pageOffset + maxTotal));
   }, [pageOffset, candidates]);
 
-  function onSelect(item) {
-    // item is [token, count]
-    const token = item[0];
-    if (token === " ") {
-      setInput((s) => s + " ");
-    } else if (token.includes(" ")) {
-      // word selected
-      setInput((s) => (s.endsWith(" ") ? s + token : s + " " + token));
-    } else {
-      setInput((s) => s + token);
+  function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
+    return shuffled;
   }
 
   const gridOrder = useMemo(() => getGridOrder(), []); // Ensure gridOrder is initialized
+
+  console.log("Rendering predictions:", predictions); // Debug log to check predictions before rendering
+
+  function onSelect(item) {
+    console.log("onSelect called with:", item);
+    // item is [token, count]
+    const token = item[0];
+
+    // always handle explicit space token quickly
+    if (token === " ") {
+      setInput((s) => s + " ");
+      return;
+    }
+
+    const isWordToken = token.length > 1 || token.includes(' ');
+    if (!isWordToken) {
+      // single-letter letter; just append
+      setInput((s) => s + token);
+      return;
+    }
+
+    // For word tokens: decide whether to replace the current last token (completion)
+    // or to append a new word (with a separating space).
+    const trimmed = input; // keep raw spacing to inspect last char
+    const parts = trimmed.split(' ');
+    const last = parts[parts.length - 1] || '';
+
+    // If the selected token starts with the last token (case-insensitive), treat as completion
+    if (last && token.toLowerCase().startsWith(last.toLowerCase())) {
+      parts[parts.length - 1] = token;
+      const out = parts.join(' ');
+      setInput(out.endsWith(' ') ? out : out + ' ');
+      return;
+    }
+
+    // Otherwise append a space then the token (and a trailing space)
+    if (trimmed === '' || trimmed.endsWith(' ')) {
+      setInput((s) => s + token + ' ');
+    } else {
+      setInput((s) => s + ' ' + token + ' ');
+    }
+  }
 
   return (
     <div className="app-center">
@@ -194,23 +283,52 @@ export default function RadialPredictor() {
           if (cellIndex === 4) {
             // center cell acts as a pager for more candidate sets
             const maxTotal = 8;
-            const page = Math.floor(pageOffset / maxTotal);
-            const hasMore = candidates.length > (page + 1) * maxTotal;
             return (
               <div key="center-input" className="radial-grid-cell radial-center-cell">
                 <button
                   className="radial-center-button"
                   onClick={() => {
-                    const nextOffset = pageOffset + maxTotal;
-                    if (nextOffset >= candidates.length) {
-                      setPageOffset(0);
-                      setPredictions(candidates.slice(0, maxTotal));
+                    const maxTotal = 8;
+                    const visibleSet = new Set((predictions || []).map((p) => String(p[0])));
+                    // Pool of candidates not currently visible
+                    const pool = (candidates || []).filter((p) => !visibleSet.has(String(p[0])));
+
+                    let newPreds = [];
+                    if (pool.length >= maxTotal) {
+                      newPreds = shuffleArray(pool).slice(0, maxTotal);
                     } else {
-                      setPageOffset(nextOffset);
-                      setPredictions(candidates.slice(nextOffset, nextOffset + maxTotal));
+                      // Try to fill from pool first, then from remaining candidates excluding duplicates
+                      newPreds = shuffleArray(pool).slice(0, maxTotal);
+                      const remaining = shuffleArray(candidates || []).filter((p) => !newPreds.some((n) => n[0] === p[0]));
+                      for (let i = 0; i < remaining.length && newPreds.length < maxTotal; i++) {
+                        // avoid adding items that were visible before
+                        if (!visibleSet.has(String(remaining[i][0]))) {
+                          newPreds.push(remaining[i]);
+                        }
+                      }
+                      // If still not enough, allow reusing some candidates (last resort)
+                      if (newPreds.length < maxTotal) {
+                        const fallback = shuffleArray(candidates || []).filter((p) => !newPreds.some((n) => n[0] === p[0]));
+                        newPreds = [...newPreds, ...fallback.slice(0, maxTotal - newPreds.length)];
+                      }
                     }
+
+                    // If we ended up with fewer than maxTotal, pad with placeholder space or common letters
+                    if (newPreds.length < maxTotal) {
+                      const padCommon = ['e','t','a','o','i','n','s','r'];
+                      let i = 0;
+                      while (newPreds.length < maxTotal && i < padCommon.length) {
+                        if (!newPreds.some((n) => n[0] === padCommon[i])) newPreds.push([padCommon[i], 1]);
+                        i++;
+                      }
+                    }
+
+                    // Reorder candidates so newPreds are first
+                    const reordered = [...newPreds, ...(candidates || []).filter((c) => !newPreds.some((n) => n[0] === c[0]))];
+                    setCandidates(reordered);
+                    setPredictions(newPreds);
                   }}
-                  title={hasMore ? 'Show more suggestions' : 'Restart suggestions'}
+                  title="Shuffle suggestions"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
                     <path d="M16 3h5v5" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
