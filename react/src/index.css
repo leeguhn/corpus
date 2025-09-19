@@ -1,0 +1,185 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, #root {
+  height: 100%;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  /* let .app-center handle centering to avoid layout surprises from a global flex on body */
+}
+
+/* Center the app container both vertically and horizontally */
+.app-center {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* ensure the direct child wrapper doesn't collapse and is centered */
+.app-center > div {
+  width: 100%;
+  display: flex;
+  flex-direction: column; /* stack input and controls above the grid */
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.input-area {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.input-area input {
+  width: 80%;
+  max-width: 520px;
+}
+.input-controls {
+  display: flex;
+  gap: 8px;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 0px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Radial predictor specific button styles - override global button rules */
+.radial-predictor-button {
+  /* shared layout only - no border-radius so specific rules can control shape */
+  border: 2px solid #6a9 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.radial-word-button,
+.radial-letter-button {
+  /* rectangular, numpad-like keys for both words and letters */
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #6a9 !important;
+  padding: 6px 10px !important;
+  min-width: 48px;
+  min-height: 40px;
+}
+.radial-letter-button {
+  /* letters can have a different background tint */
+  background: #e6ffe6 !important;
+}
+
+/* Force uniform key dimensions (numpad-like). JS will apply small scale transforms for emphasis. */
+.radial-predictor-button {
+  width: 88px !important;
+  height: 64px !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure the grid positions occupy the same box - prevent top-left from appearing larger */
+.radial-grid-cell {
+  width: 88px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* New grid container for 3x3 layout to guarantee uniform cell sizes */
+.radial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 88px);
+  grid-template-rows: repeat(3, 64px);
+  gap: 8px;
+  width: calc(3 * 88px + 2 * 8px);
+  justify-content: center;
+}
+
+.radial-center-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.radial-center-content {
+  width: 56px;
+  height: 40px;
+  border-radius: 8px;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #000;
+}
+
+.radial-center-button {
+  width: 72px;
+  height: 48px;
+  border-radius: 8px;
+  background: #fff;
+  border: 2px solid #6a9;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
