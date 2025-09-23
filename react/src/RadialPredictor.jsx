@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { Shuffle } from 'lucide-react';
 
 // Helper to load JSON from public folder
 async function loadJson(filename) {
@@ -330,11 +331,9 @@ export default function RadialPredictor() {
                   }}
                   title="Shuffle suggestions"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                    <path d="M16 3h5v5" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M4 20l6-6 7-7" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M21 14v6h-6" stroke="#000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <span className="shuffle-icon invert" aria-hidden>
+                    <Shuffle size={18} aria-hidden />
+                  </span>
                 </button>
               </div>
             );
