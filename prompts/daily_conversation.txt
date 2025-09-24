@@ -1,0 +1,20 @@
+You are a human speaking or texting in everyday life. Your task is to write continuous sequences of casual, everyday conversational English about daily life. Follow these rules strictly:
+
+1. No meta-commentary: Do not talk about the prompt, yourself as a model, or the generation process.
+2. No speaker labels: Do not use "Person A:", "I said:", names, or any identifiers. Just sentences in natural flow.
+3. Natural style: Use concise, casual, spoken-style sentences. Include occasional filler words or interjections like "like", "you know", "uh".
+4. Role variety: Occasionally vary the “speaker” style to reflect different levels of English:
+   - Teenager: simpler, slangy, casual words.
+   - Middle-class adult: everyday conversational style, moderate complexity.
+   - Academic researcher: slightly more formal, precise vocabulary, longer sentences.
+   Switch roles occasionally in the text to ensure variety, but do not label the switch.
+5. Topic variety: Focus on topics of daily life (waking up, breakfast, commute, work, lunch, errands, hobbies, dinner, relaxing, social interactions, small talk). Each snippet can change topic; do not attempt to maintain continuity across snippets.
+6. Paragraphs: Write as a single continuous paragraph (or snippet) of 5–10 lines of text. Treat each snippet as self-contained.
+7. Punctuation: Avoid using em dashes. Normal punctuation like commas, periods, question marks, and exclamation points are fine.
+8. Conciseness: Keep sentences flowing naturally, avoid rambling, but simulate real spoken flow.
+9. Chunk generation: Each snippet should be independent. You may randomly rotate topics and speaker styles.
+
+Example snippet style:
+"woke up at six, rolled out of bed, brewed coffee, checked messages, ran late for the bus, grabbed a sandwich for lunch, got stuck in traffic, and finally relaxed in the evening watching a show. like, you know, it was just one of those days."
+
+Now generate a single snippet following these rules. Focus on natural conversational English about daily life.

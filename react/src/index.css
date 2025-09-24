@@ -7,6 +7,9 @@
   color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
 
+  /* Configure shuffle icon inversion: 0 = no invert, 1 = invert colors */
+  --shuffle-icon-invert: 0;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -189,9 +192,22 @@ button:focus-visible {
   z-index: 1;
 }
 
-/* Invert the icon colors (useful on dark/light backgrounds). This flips all colors inside the SVG. */
-.shuffle-icon.invert svg {
-  filter: invert(1) hue-rotate(180deg);
+/* Shuffle icon inversion is configurable via --shuffle-icon-invert (0 or 1).
+   You can set this globally in :root or per-element by adding the `invert` class.
+   Example global override: :root { --shuffle-icon-invert: 1; }
+   Example per-icon toggle: <span class="shuffle-icon invert">...</span>
+*/
+.shuffle-icon {
+  /* Use an internal custom property to allow per-element override with the .invert class */
+  --_shuffle-icon-invert: var(--shuffle-icon-invert, 0);
+  margin-top: 6px;
+
+}
+.shuffle-icon.invert {
+  --_shuffle-icon-invert: 1;
+}
+.shuffle-icon svg {
+  filter: invert(var(--_shuffle-icon-invert)) hue-rotate(calc(var(--_shuffle-icon-invert) * 180deg));
 }
 
 @media (prefers-color-scheme: light) {

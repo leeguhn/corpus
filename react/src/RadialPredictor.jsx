@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { FaRandom } from 'react-icons/fa';
 import { Shuffle } from 'lucide-react';
 
 // Helper to load JSON from public folder
@@ -349,7 +348,9 @@ export default function RadialPredictor() {
                   }}
                   title="Shuffle suggestions"
                 >
-                  <Shuffle size={24} aria-label="Shuffle" />
+                  <span className="shuffle-icon invert" aria-hidden>
+                    <Shuffle size={24} aria-label="Shuffle" />
+                  </span>
                 </button>
               </div>
             ) : (() => {
