@@ -5,7 +5,7 @@ SYSTEM_PROMPT = (
     "Ramble as if you are a {role}."
     " Do NOT include internal thoughts, analysis, chain-of-thought, reasoning steps, or any meta-commentary. "
     "Do NOT include channel markers like <|channel|>analysis. Do NOT use asterisks (*) or markdown-like formatting. Output only the final snippet as plain text."
-)
+) 
 
 # Topics of daily life
 topics = [
