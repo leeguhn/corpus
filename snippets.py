@@ -3,6 +3,75 @@ import os
 import logging
 from datetime import datetime
 import argparse
+import re
+import difflib
+
+# Filtering utility must be defined before generation loop
+def filter_and_normalize_sentence(sentence: str, prev_sentences: list[str]) -> str | None:
+    """Return cleaned sentence or None to drop it.
+    Filters out instruction echoes, 'previous output was cut off' messages, prompt leakage,
+    duplicates, and normalizes punctuation issues.
+    """
+    if not sentence:
+        return None
+    s = sentence.strip()
+    # Remove angle-bracket markers and asterisks (safety)
+    s = re.sub(r"<\|/?[a-zA-Z0-9_\-]+\|>", "", s)
+    s = s.replace('*', '')
+    s = re.sub(r"\s+", ' ', s).strip()
+
+    # Lowercase copy for checks
+    low = s.lower()
+    # Drop if it contains common instruction/analysis leakage
+    instruction_patterns = [
+        r"\bdo not\b",
+        r"\bdon't\b",
+        r"\bdo n't\b",
+        r"compose an essay",
+        r"previous output was cut off",
+        r"the previous output was cut off",
+        r"do not include",
+        r"do not use",
+        r"do not mention",
+        r"do not add",
+        r"do not include personal",
+    ]
+    for pat in instruction_patterns:
+        if re.search(pat, low):
+            return None
+
+    # Drop if it's clearly an instruction/prompt echo (starts with verbs like 'compose', 'write', 'please')
+    if re.match(r"^(compose|write|please|provide|generate)\b", low):
+        return None
+
+    # Remove repeated artifacts like 'Previous output was cut off' fragments embedded
+    s = re.sub(r"previous output was cut off\.?", "", s, flags=re.I)
+
+    # Fix punctuation glitches like 'However,.' -> 'However.' and ',.' -> '.'
+    s = re.sub(r",\s*[\.\!\?]", '.', s)
+    s = re.sub(r"\s+([,;:\.\!\?])", r"\1", s)
+    s = re.sub(r"([\?\!\.]){2,}", r"\1", s)
+    # Fix 'However,.' specifically
+    s = re.sub(r"However,\.", "However.", s)
+
+    # Trim repeated short phrase duplication: if sentence repeats earlier exactly or is a near-duplicate, drop
+    for prev in prev_sentences[-8:]:
+        if not prev:
+            continue
+        if s == prev:
+            return None
+        # similarity check
+        ratio = difflib.SequenceMatcher(None, s, prev).ratio()
+        if ratio > 0.9:
+            return None
+
+    # If sentence is extremely short or looks like leftover token, drop
+    if len(s.split()) < 2:
+        return None
+
+    # Final normalize whitespace
+    s = re.sub(r"\s+", ' ', s).strip()
+    return s
 
 # ----------------------------
 # Configuration
@@ -11,13 +80,40 @@ import argparse
 # Topics of daily life
 topics = [
     "waking up", "breakfast", "commute", "work", "lunch",
-    "errands", "hobbies", "dinner", "relaxing", "social interactions"
+    "errands", "hobbies", "dinner", "relaxing", "social interactions",
+    "morning routine", "shower", "coffee", "emails", "meetings",
+    "brainstorming", "reading", "studying", "gym", "exercise",
+    "grocery shopping", "cooking", "baking", "laundry", "dishes",
+    "bedtime", "naps", "pet care", "parenting", "childcare",
+    "teaching", "tutoring", "shopping", "budgeting", "paying bills",
+    "gardening", "yard work", "walking the dog", "public transit", "traffic",
+    "parking", "bike ride", "park", "library", "cafe",
+    "nightlife", "movie night", "streaming", "gaming", "sports",
+    "volunteering", "DIY", "home repairs", "appointments", "dentist",
+    "doctor visit", "prescriptions", "packing", "unpacking", "travel planning",
+    "seasonal chores", "study group", "group project", "networking", "interview prep",
+    "small talk", "flirting", "date night", "family time", "chores",
+    "celebration", "holidays", "home office", "commute woes", "free time"
 ]
 
 # Roles to rotate
 roles = [
     "teenager", "middle-class adult", "academic researcher",
-    "student", "office worker", "artist"
+    "student", "office worker", "artist",
+    "retiree", "parent", "single parent", "chef", "barista",
+    "nurse", "doctor", "engineer", "programmer", "designer",
+    "salesperson", "manager", "ceo", "intern", "graduate student",
+    "postdoc", "librarian", "teacher", "professor", "scientist",
+    "activist", "musician", "actor", "writer", "journalist",
+    "blogger", "social worker", "counselor", "psychologist", "therapist",
+    "farmer", "gardener", "handyman", "mechanic", "driver",
+    "taxi driver", "bus driver", "pilot", "flight attendant", "waiter",
+    "waitress", "baker", "photographer", "filmmaker", "influencer",
+    "entrepreneur", "founder", "investor", "accountant", "lawyer",
+    "paralegal", "student-athlete", "coach", "personal trainer", "athlete",
+    "consultant", "analyst", "it support", "sysadmin", "security guard",
+    "police officer", "firefighter", "paramedic", "civil servant", "policy maker",
+    "diplomat", "ngo worker", "small-business owner", "retail worker", "construction worker"
 ]
 
 # Number of snippets to generate
@@ -28,16 +124,18 @@ OUTPUT_FILE = "snippets.txt"
 
 # Defaults for LM API
 API_URL = "http://127.0.0.1:1234/v1/completions"
-API_MODEL = "gpt-oss-20b"
+API_MODEL = "google/gemma-3-12b"
 
 # Add CLI to control target words
 parser = argparse.ArgumentParser(description='Generate snippets using local LLM')
 parser.add_argument('--target-words', type=int, default=1000, help='Approximate total words to generate')
 parser.add_argument('--data-dir', type=str, default='data', help='Base data directory for run outputs')
+parser.add_argument('--max-sentence-tokens', type=int, default=120, help='Max tokens to request per sentence')
 args = parser.parse_args()
 
 TARGET_WORDS = args.target_words
 DATA_DIR = args.data_dir
+SENT_MAX_TOKENS = args.max_sentence_tokens
 
 # ----------------------------
 # System prompt (set once)
@@ -45,7 +143,7 @@ DATA_DIR = args.data_dir
 SYSTEM_PROMPT = (
     "Ramble as if you are a {role}." 
     " Do NOT include internal thoughts, analysis, chain-of-thought, reasoning steps, or any meta-commentary. "
-    "Do NOT include channel markers like <|channel|>analysis. Output only the final snippet as plain text."
+    "Do NOT include channel markers like <|channel|>analysis. Do NOT use asterisks (*) or markdown-like formatting. Output only the final snippet as plain text."
 )
 
 # ----------------------------
@@ -91,32 +189,96 @@ with open(RAW_OUT, 'w', encoding='utf-8') as rawf:
         role1 = random.choice(roles)
         # 50% chance of monologue
         if random.random() < 0.5:
-            prompt = create_prompt(topic, role1)
+            base_prompt = create_prompt(topic, role1)
             role_text = role1
         else:
             role2 = random.choice([r for r in roles if r != role1])
-            prompt = create_prompt(topic, role1, role2)
+            base_prompt = create_prompt(topic, role1, role2)
             role_text = f"{role1} and {role2}"
 
-        # Build full prompt by formatting the simple system template with role_text
-        system_text = SYSTEM_PROMPT.format(role=role_text)
-        full_prompt = system_text + "\n\n" + prompt
-        try:
-            out = generate(full_prompt, max_new_tokens=100)
-        except Exception as e:
-            logging.exception('Generation failed, using placeholder: %s', e)
-            out = f"[Failed generation for prompt: {prompt}]"
+        # Decide how many sentences for this snippet (5-10)
+        sentences_target = random.randint(5, 10)
+        prev_sentences = []
 
-        # Clean newlines and write
-        out_clean = out.replace('\n', ' ').strip()
-        if not out_clean:
-            out_clean = 'the'
-        rawf.write(out_clean + ' ')
-        rawf.flush()
+        for s_i in range(sentences_target):
+            # Build per-sentence prompt: include role/system and the base prompt, plus context of prior sentences
+            system_text = SYSTEM_PROMPT.format(role=role_text)
+            context = ''
+            if prev_sentences:
+                # provide recent context to maintain coherence
+                context = ' '.join(prev_sentences[-3:]) + '\n\n'
+            sentence_request = system_text + "\n\n" + base_prompt + "\n\n" + context + "Write ONE complete sentence about the above. Do not include partial sentences or analysis. Output only a single sentence. Do not use '*' characters."
+            try:
+                out = generate(sentence_request, max_new_tokens=SENT_MAX_TOKENS)
+            except Exception as e:
+                logging.exception('Generation failed, using placeholder sentence: %s', e)
+                out = "[Failed generation]"
 
-        # Update counters
-        nw = len(tokenize_words(out_clean))
-        words_written += nw
+            # Clean the generated sentence
+            sentence = out.replace('\n', ' ').strip()
+            # Remove any channel markers and angle-bracket tokens
+            sentence = re.sub(r"<\|/?[a-zA-Z0-9_\-]+\|>", "", sentence)
+            # Remove asterisks
+            sentence = sentence.replace('*', '')
+            # Trim extra whitespace
+            sentence = re.sub(r"\s+", ' ', sentence).strip()
+
+            # If sentence seems cut off (no terminal punctuation), attempt retries/finish
+            retries = 0
+            max_retries = 2
+            while (not sentence or sentence[-1] not in '.!?' ) and retries < max_retries:
+                retries += 1
+                # Ask the model to finish the incomplete sentence only
+                partial = sentence
+                finish_prompt = system_text + "\n\n" + base_prompt + "\n\n" + context + f"The previous output was cut off. Finish the incomplete sentence below without adding new sentences or analysis. Previous partial: \"{partial}\""
+                try:
+                    cont = generate(finish_prompt, max_new_tokens=SENT_MAX_TOKENS)
+                except Exception as e:
+                    logging.exception('Finish request failed: %s', e)
+                    cont = ''
+                cont = cont.replace('\n', ' ').strip()
+                cont = re.sub(r"<\|/?[a-zA-Z0-9_\-]+\|>", "", cont)
+                cont = cont.replace('*', '')
+                cont = re.sub(r"\s+", ' ', cont).strip()
+                if cont:
+                    # Append continuation to partial, ensuring spacing
+                    if partial and not partial.endswith(' '):
+                        sentence = partial + ' ' + cont
+                    else:
+                        sentence = partial + cont
+                # if still no terminal punctuation, loop to retry
+
+            # Ensure sentence ends with punctuation
+            if sentence and sentence[-1] not in '.!?':
+                sentence = sentence.rstrip() + '.'
+
+            if not sentence:
+                sentence = 'The.'
+
+            # Final safety: remove stray asterisks or markers
+            sentence = re.sub(r"<\|/?[a-zA-Z0-9_\-]+\|>", "", sentence)
+            sentence = sentence.replace('*', '')
+            sentence = re.sub(r"\s+", ' ', sentence).strip()
+
+            # Filter and normalize; skip if None
+            sentence_clean = filter_and_normalize_sentence(sentence, prev_sentences)
+            if not sentence_clean:
+                # do not write this sentence; continue to next sentence
+                continue
+
+            # Append sentence to previous and write to raw file
+            prev_sentences.append(sentence_clean)
+            rawf.write(sentence_clean + ' ')
+            rawf.flush()
+
+            # Update counters
+            nw = len(tokenize_words(sentence_clean))
+            words_written += nw
+
+            # Break early if we've reached the global target
+            if words_written >= TARGET_WORDS:
+                break
+
         snippets_generated += 1
 
         if snippets_generated % 50 == 0:
