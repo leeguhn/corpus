@@ -264,18 +264,21 @@ export default function RadialPredictor() {
     // This makes quick successive updates feel smoother without heavy animation.
     transitionTimeoutRef.current = setTimeout(() => {
       setPredictions(newPreds);
-      // If the mouse hasn't moved and remains over a suggestion, trigger its preview immediately
+      // After React renders the new DOM, check what's under the cursor and preview it.
       try {
-        const mp = mousePosRef.current || { x: 0, y: 0 };
-        const el = document.elementFromPoint(mp.x, mp.y);
-        if (el && el.getAttribute) {
-          const tokenAttr = el.getAttribute('data-token') || (el.closest && el.closest('[data-token]') && el.closest('[data-token]').getAttribute('data-token')) || null;
-          if (tokenAttr) {
-            // trigger show preview for this token without delay
-            if (hoverShowTimeoutRef.current) { clearTimeout(hoverShowTimeoutRef.current); hoverShowTimeoutRef.current = null; }
-            handleHoverPreview(tokenAttr);
-          }
-        }
+        requestAnimationFrame(() => {
+          try {
+            const mp = mousePosRef.current || { x: 0, y: 0 };
+            const el = document.elementFromPoint(mp.x, mp.y);
+            if (el && el.getAttribute) {
+              const tokenAttr = el.getAttribute('data-token') || (el.closest && el.closest('[data-token]') && el.closest('[data-token]').getAttribute('data-token')) || null;
+              if (tokenAttr) {
+                if (hoverShowTimeoutRef.current) { clearTimeout(hoverShowTimeoutRef.current); hoverShowTimeoutRef.current = null; }
+                  handleHoverPreview(tokenAttr, { highlight: false });
+              }
+            }
+          } catch (e) {}
+        });
       } catch (e) {}
       transitionTimeoutRef.current = null;
     }, 20);
@@ -319,19 +322,40 @@ export default function RadialPredictor() {
     return { preview, selStart, selEnd: preview.length };
   }
 
-  function handleHoverPreview(token) {
+  function handleHoverPreview(token, opts = { highlight: true }) {
     try {
       const { preview, selStart, selEnd } = computePreviewForToken(token);
       setPreviewValue(preview);
       setPreviewSel([selStart, selEnd]);
       setPreviewActive(true);
-      // Focus and set selection in the input element
+      // Focus and set selection in the input element after React updates the DOM
       setTimeout(() => {
         try {
           if (inputRef.current) {
-            inputRef.current.focus();
-            // set the DOM selection to highlight the previewed portion
-            inputRef.current.setSelectionRange(selStart, selEnd);
+            // Ensure DOM update has occurred and then set selection/scroll
+            requestAnimationFrame(() => {
+              try {
+                inputRef.current.focus();
+                // If requested, highlight the appended portion; otherwise place caret at end
+                if (opts && opts.highlight === false) {
+                  inputRef.current.setSelectionRange(selEnd, selEnd);
+                } else {
+                  inputRef.current.setSelectionRange(selStart, selEnd);
+                }
+                // Ensure the input scrolls to show the caret / rightmost text only when content overflows
+                try {
+                  const sw = inputRef.current.scrollWidth || 0;
+                  const cw = inputRef.current.clientWidth || 0;
+                  if (sw > cw) {
+                    inputRef.current.scrollLeft = Math.max(0, sw - cw);
+                    // Also align text to the right while previewing so the most recent chars are visible
+                    try { inputRef.current.style.textAlign = 'right'; } catch (e) {}
+                  } else {
+                    try { inputRef.current.style.textAlign = ''; } catch (e) {}
+                  }
+                } catch (e) {}
+              } catch (e) {}
+            });
           }
         } catch (e) {}
       }, 0);
@@ -344,13 +368,26 @@ export default function RadialPredictor() {
     setPreviewActive(false);
     setPreviewValue('');
     setPreviewSel([0, 0]);
-    // restore focus and caret at end of real input
+    // restore focus and caret at end of real input after DOM update
     setTimeout(() => {
       try {
         if (inputRef.current) {
-          inputRef.current.focus();
-          const pos = (input || '').length;
-          inputRef.current.setSelectionRange(pos, pos);
+          requestAnimationFrame(() => {
+              try {
+                inputRef.current.focus();
+                const pos = (input || '').length;
+                inputRef.current.setSelectionRange(pos, pos);
+                try {
+                  const sw = inputRef.current.scrollWidth || 0;
+                  const cw = inputRef.current.clientWidth || 0;
+                  if (sw > cw) {
+                    inputRef.current.scrollLeft = Math.max(0, sw - cw);
+                  }
+                } catch (e) {}
+                // remove temporary right alignment applied during preview
+                try { inputRef.current.style.textAlign = ''; } catch (e) {}
+              } catch (e) {}
+          });
         }
       } catch (e) {}
     }, 0);
@@ -377,7 +414,8 @@ export default function RadialPredictor() {
     hoverShowTimeoutRef.current = setTimeout(() => {
       hoverShowTimeoutRef.current = null;
       hoverElementRef.current = null;
-      handleHoverPreview(token);
+      // Show caret-only preview (no highlighted selection) for hover to keep caret blinking
+      handleHoverPreview(token, { highlight: false });
     }, HOVER_SHOW_DELAY);
   }
 
@@ -587,15 +625,102 @@ export default function RadialPredictor() {
     if (last && token.toLowerCase().startsWith(last.toLowerCase())) {
       parts[parts.length - 1] = token;
       const out = parts.join(' ');
-      setInput(out.endsWith(' ') ? out : out + ' ');
+      const newInput = out.endsWith(' ') ? out : out + ' ';
+      setInput(newInput);
+      // Immediately fetch likely next-word suggestions (max 3) and surface them mixed with letters
+      (async () => {
+        try {
+          const ctxTrim = String(newInput || '').trim();
+          const suggestions = await fetchWordsFromServer(ctxTrim, 8);
+          const wordItems = (suggestions || []).map((s, i) => [s[0], s[1] || (8 - i)]).filter(([w]) => String(w || '').toLowerCase() !== String(token || '').toLowerCase());
+          // derive letter suggestions similar to the main query flow
+          let letterSuggestions = [];
+          try {
+            const lastChar = ctxTrim.slice(-1);
+            const lastTwo = ctxTrim.slice(-2);
+            if (letterTri && letterTri[lastTwo]) {
+              letterSuggestions = (letterTri[lastTwo] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            } else if (letterBi && letterBi[lastChar]) {
+              letterSuggestions = (letterBi[lastChar] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            }
+          } catch (e) {
+            letterSuggestions = [];
+          }
+          if (!letterSuggestions || letterSuggestions.length === 0) {
+            letterSuggestions = COMMON_LETTERS.map((ch, i) => [ch, 100 - i]);
+          }
+          // Use mergePick with a cap of 3 words to prioritize showing up to 3 next-word suggestions
+          const final = mergePick(wordItems, letterSuggestions, 8, 2, 3);
+          if (!final.some((c) => c[0] === ' ')) final.unshift([' ', 1]);
+          setCandidates(final);
+          applyPredictions(final.slice(0, 8));
+        } catch (e) {
+          // ignore fetch/display errors
+        }
+      })();
       return;
     }
 
     // Otherwise append a space then the token (and a trailing space)
     if (trimmed === '' || trimmed.endsWith(' ')) {
-      setInput((s) => s + token + ' ');
+      const newInput = (trimmed === '' || trimmed.endsWith(' ')) ? (input + token + ' ') : (input + ' ' + token + ' ');
+      setInput(newInput);
+      // Immediately fetch and show likely next-word suggestions (max 3)
+      (async () => {
+        try {
+          const ctxTrim = String(newInput || '').trim();
+          const suggestions = await fetchWordsFromServer(ctxTrim, 8);
+          const wordItems = (suggestions || []).map((s, i) => [s[0], s[1] || (8 - i)]).filter(([w]) => String(w || '').toLowerCase() !== String(token || '').toLowerCase());
+          let letterSuggestions = [];
+          try {
+            const lastChar = ctxTrim.slice(-1);
+            const lastTwo = ctxTrim.slice(-2);
+            if (letterTri && letterTri[lastTwo]) {
+              letterSuggestions = (letterTri[lastTwo] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            } else if (letterBi && letterBi[lastChar]) {
+              letterSuggestions = (letterBi[lastChar] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            }
+          } catch (e) {
+            letterSuggestions = [];
+          }
+          if (!letterSuggestions || letterSuggestions.length === 0) {
+            letterSuggestions = COMMON_LETTERS.map((ch, i) => [ch, 100 - i]);
+          }
+          const final = mergePick(wordItems, letterSuggestions, 8, 2, 3);
+          if (!final.some((c) => c[0] === ' ')) final.unshift([' ', 1]);
+          setCandidates(final);
+          applyPredictions(final.slice(0, 8));
+        } catch (e) {}
+      })();
     } else {
-      setInput((s) => s + ' ' + token + ' ');
+      const newInput = (input === '' || input.endsWith(' ')) ? (input + token + ' ') : (input + ' ' + token + ' ');
+      setInput(newInput);
+      (async () => {
+        try {
+          const ctxTrim = String(newInput || '').trim();
+          const suggestions = await fetchWordsFromServer(ctxTrim, 8);
+          const wordItems = (suggestions || []).map((s, i) => [s[0], s[1] || (8 - i)]).filter(([w]) => String(w || '').toLowerCase() !== String(token || '').toLowerCase());
+          let letterSuggestions = [];
+          try {
+            const lastChar = ctxTrim.slice(-1);
+            const lastTwo = ctxTrim.slice(-2);
+            if (letterTri && letterTri[lastTwo]) {
+              letterSuggestions = (letterTri[lastTwo] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            } else if (letterBi && letterBi[lastChar]) {
+              letterSuggestions = (letterBi[lastChar] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            }
+          } catch (e) {
+            letterSuggestions = [];
+          }
+          if (!letterSuggestions || letterSuggestions.length === 0) {
+            letterSuggestions = COMMON_LETTERS.map((ch, i) => [ch, 100 - i]);
+          }
+          const final = mergePick(wordItems, letterSuggestions, 8, 2, 3);
+          if (!final.some((c) => c[0] === ' ')) final.unshift([' ', 1]);
+          setCandidates(final);
+          applyPredictions(final.slice(0, 8));
+        } catch (e) {}
+      })();
     }
   }
 

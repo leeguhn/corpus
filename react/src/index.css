@@ -67,6 +67,7 @@ body {
 
   max-width: 520px;
   border-radius: 10px;
+  overflow: auto; /* ensure scrollLeft works when content overflows */
 }
 .input-controls {
   display: flex;
