@@ -47,6 +47,10 @@ function scaleSizes(counts, minSize = 40, maxSize = 90) {
 
 export default function RadialPredictor() {
   const [input, setInput] = useState("");
+  const inputRef = useRef(null);
+  const [previewActive, setPreviewActive] = useState(false);
+  const [previewValue, setPreviewValue] = useState("");
+  const [previewSel, setPreviewSel] = useState([0, 0]); // [start, end]
   const [predictions, setPredictions] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [pageOffset, setPageOffset] = useState(0);
@@ -67,6 +71,8 @@ export default function RadialPredictor() {
     setLetterTri({});
     setWordBi({});
     setWordTri({});
+    // Keep input focused so caret is always visible
+    try { setTimeout(() => { inputRef.current && inputRef.current.focus(); }, 50); } catch (e) {}
   }, []);
 
   // Build a simple vocabulary and frequency map from word bigram/trigram data for prefix completions
@@ -97,7 +103,7 @@ export default function RadialPredictor() {
                   });
                 });
                 starterLetters = Object.entries(counts).map(([k, v]) => [k, v]).sort((a, b) => b[1] - a[1]);
-                allCandidates = starterLetters;
+      setInput(out); // Do not add a space if it ends with a space
               }
             }
           } catch (err) {
@@ -234,16 +240,169 @@ export default function RadialPredictor() {
   const lastServerSuggestionsRef = useRef([]); // raw array of strings from backend
   const lastServerSourceRef = useRef('');
   function applyPredictions(newPreds) {
-    setPredictions(newPreds);
+    // Update recently shown tokens immediately to avoid repeats
     try {
       const tokens = (newPreds || []).map((p) => String(p[0]));
       recentlyShownRef.current = [...recentlyShownRef.current, ...tokens].slice(-128);
     } catch (e) {
       // ignore
     }
+
+    // If no gridRef available, just set predictions immediately
+    if (!gridRef || !gridRef.current) {
+      setPredictions(newPreds);
+      return;
+    }
+
+    // Cancel any in-flight update
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+      transitionTimeoutRef.current = null;
+    }
+
+    // Wait a tiny amount before swapping the predictions to reduce instant flicker.
+    // This makes quick successive updates feel smoother without heavy animation.
+    transitionTimeoutRef.current = setTimeout(() => {
+      setPredictions(newPreds);
+      // If the mouse hasn't moved and remains over a suggestion, trigger its preview immediately
+      try {
+        const mp = mousePosRef.current || { x: 0, y: 0 };
+        const el = document.elementFromPoint(mp.x, mp.y);
+        if (el && el.getAttribute) {
+          const tokenAttr = el.getAttribute('data-token') || (el.closest && el.closest('[data-token]') && el.closest('[data-token]').getAttribute('data-token')) || null;
+          if (tokenAttr) {
+            // trigger show preview for this token without delay
+            if (hoverShowTimeoutRef.current) { clearTimeout(hoverShowTimeoutRef.current); hoverShowTimeoutRef.current = null; }
+            handleHoverPreview(tokenAttr);
+          }
+        }
+      } catch (e) {}
+      transitionTimeoutRef.current = null;
+    }, 20);
+  }
+
+  // When user hovers a suggestion, compute a preview value and selection range
+  function computePreviewForToken(token) {
+    const cur = input || '';
+    if (!token) return { preview: cur, selStart: cur.length, selEnd: cur.length };
+    // Space token
+    if (token === ' ') {
+      const preview = cur + ' ';
+      return { preview, selStart: cur.length, selEnd: cur.length + 1 };
+    }
+    const isWord = token.length > 1 || token.includes(' ');
+    if (!isWord) {
+      // single char append
+      const preview = cur + token;
+      return { preview, selStart: cur.length, selEnd: cur.length + 1 };
+    }
+    // Word token
+    if (/\s$/.test(cur)) {
+      // if current ends with space, append word + space
+      const preview = cur + token + ' ';
+      return { preview, selStart: cur.length + token.length, selEnd: cur.length + token.length + 1 };
+    }
+    // Replace last token if it looks like a prefix
+    const parts = cur.split(' ');
+    const last = parts[parts.length - 1] || '';
+    if (last && token.toLowerCase().startsWith(last.toLowerCase())) {
+      const prefixStart = cur.lastIndexOf(last);
+      const preview = parts.slice(0, -1).concat([token + ' ']).join(' ');
+      // find first index where preview and cur differ
+      let start = 0;
+      while (start < cur.length && start < preview.length && cur[start] === preview[start]) start++;
+      return { preview, selStart: start, selEnd: preview.length };
+    }
+    // Otherwise append with space
+    const preview = (cur === '' || /\s$/.test(cur)) ? cur + token + ' ' : cur + ' ' + token + ' ';
+    const selStart = preview.length - 1; // highlight trailing space
+    return { preview, selStart, selEnd: preview.length };
+  }
+
+  function handleHoverPreview(token) {
+    try {
+      const { preview, selStart, selEnd } = computePreviewForToken(token);
+      setPreviewValue(preview);
+      setPreviewSel([selStart, selEnd]);
+      setPreviewActive(true);
+      // Focus and set selection in the input element
+      setTimeout(() => {
+        try {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            // set the DOM selection to highlight the previewed portion
+            inputRef.current.setSelectionRange(selStart, selEnd);
+          }
+        } catch (e) {}
+      }, 0);
+    } catch (e) {
+      // noop
+    }
+  }
+
+  function clearHoverPreview() {
+    setPreviewActive(false);
+    setPreviewValue('');
+    setPreviewSel([0, 0]);
+    // restore focus and caret at end of real input
+    setTimeout(() => {
+      try {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          const pos = (input || '').length;
+          inputRef.current.setSelectionRange(pos, pos);
+        }
+      } catch (e) {}
+    }, 0);
   }
 
   const gridOrder = useMemo(() => getGridOrder(), []); // Ensure gridOrder is initialized
+  const gridRef = useRef(null);
+  const transitionTimeoutRef = useRef(null);
+  const hoverShowTimeoutRef = useRef(null);
+  const hoverHideTimeoutRef = useRef(null);
+  const hoverElementRef = useRef(null);
+  const mousePosRef = useRef({ x: 0, y: 0 });
+
+  // Debounced hover helpers to avoid flicker when moving quickly between keys
+  const HOVER_SHOW_DELAY = 20; // ms
+  const HOVER_HIDE_DELAY = 30; // ms
+
+  function scheduleShowHover(token) {
+    if (hoverHideTimeoutRef.current) {
+      clearTimeout(hoverHideTimeoutRef.current);
+      hoverHideTimeoutRef.current = null;
+    }
+    if (hoverShowTimeoutRef.current) clearTimeout(hoverShowTimeoutRef.current);
+    hoverShowTimeoutRef.current = setTimeout(() => {
+      hoverShowTimeoutRef.current = null;
+      hoverElementRef.current = null;
+      handleHoverPreview(token);
+    }, HOVER_SHOW_DELAY);
+  }
+
+  function scheduleHideHover() {
+    if (hoverShowTimeoutRef.current) {
+      clearTimeout(hoverShowTimeoutRef.current);
+      hoverShowTimeoutRef.current = null;
+    }
+    if (hoverHideTimeoutRef.current) clearTimeout(hoverHideTimeoutRef.current);
+    hoverHideTimeoutRef.current = setTimeout(() => {
+      hoverHideTimeoutRef.current = null;
+      hoverElementRef.current = null;
+      clearHoverPreview();
+    }, HOVER_HIDE_DELAY);
+  }
+
+  // Keep last mouse position so we can detect what element is under the cursor
+  useEffect(() => {
+    function onMove(e) {
+      mousePosRef.current.x = e.clientX;
+      mousePosRef.current.y = e.clientY;
+    }
+    window.addEventListener('mousemove', onMove);
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
 
   console.log("Rendering predictions:", predictions); // Debug log to check predictions before rendering
 
@@ -261,7 +420,8 @@ export default function RadialPredictor() {
         // fallback to common words
         return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
       }
-      return sug.map((s) => [s, 1]);
+      // Assign weights by inverse rank so earlier results are higher-weighted
+      return sug.map((s, i) => [s, Math.max(1, n - i)]);
     } catch (err) {
       console.error('fetchWordsFromServer error', err);
       // return a small fallback set so UI isn't empty
@@ -282,13 +442,104 @@ export default function RadialPredictor() {
         // fallback: return common words as placeholder
         return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
       }
-      return sug.map((s) => [s, 1]);
+      return sug.map((s, i) => [s, Math.max(1, n - i)]);
     } catch (err) {
       console.error('fetchDigitsFromServer error', err);
       return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
     }
   }
 
+  async function fetchPrefixFromServer(prefix, n = 8) {
+    try {
+      const url = backendUrl(`/predict/prefix?prefix=${encodeURIComponent(prefix)}&n=${n}`);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(res.statusText);
+      const j = await res.json();
+      const sug = (j.suggestions || []);
+      lastServerSuggestionsRef.current = sug;
+      lastServerSourceRef.current = j.source || '';
+      if (!sug || sug.length === 0) {
+        return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
+      }
+      return sug.map((s, i) => [s, Math.max(1, n - i)]);
+    } catch (err) {
+      console.error('fetchPrefixFromServer error', err);
+      return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
+    }
+  }
+
+  // Merge and pick candidates by weight while ensuring at least minLetters letters
+  function mergePick(wordItems, letterItems, maxTotal = 8, minLetters = 3, maxWords = 5, wordThreshold = 0.4) {
+    // Normalize inputs to arrays of [token, count]
+    const words = (wordItems || []).map((w) => [String(w[0]), Number(w[1] || 1)]);
+    const letters = (letterItems || []).map((l) => [String(l[0]), Number(l[1] || 1)]);
+
+    // Build combined pool keyed to token with highest count
+    const combinedMap = new Map();
+    for (const [t, c] of [...words, ...letters]) {
+      const key = String(t);
+      const existing = combinedMap.get(key) || 0;
+      combinedMap.set(key, Math.max(existing, Number(c || 0)));
+    }
+
+    // Separate letter keys and word keys
+    const letterSet = new Set((letters || []).map((l) => String(l[0])));
+
+  // Determine top word weight for thresholding
+  const wordsSortedForThreshold = [...words].sort((a, b) => b[1] - a[1]);
+  const topWordWeight = wordsSortedForThreshold.length ? wordsSortedForThreshold[0][1] : 0;
+
+    // Convert to array and sort by descending weight
+    const items = Array.from(combinedMap.entries()).map(([k, v]) => [k, v]);
+    items.sort((a, b) => b[1] - a[1]);
+
+    // Pick top items but enforce maxWords and ensure minLetters present
+    const chosen = [];
+    let lettersChosen = 0;
+    let wordsChosen = 0;
+    for (const [t, c] of items) {
+      if (chosen.length >= maxTotal) break;
+      const isLetter = letterSet.has(t);
+      if (!isLetter) {
+        // It's a word. Enforce maxWords and threshold relative to top word weight.
+        const meetsThreshold = topWordWeight === 0 ? true : (c >= topWordWeight * wordThreshold);
+        if (wordsChosen >= maxWords || !meetsThreshold) {
+          continue; // skip this word
+        }
+        wordsChosen++;
+      } else {
+        lettersChosen++;
+      }
+      chosen.push([t, c]);
+    }
+
+    // If not enough letters, insert highest-ranked letters not yet included
+    if (lettersChosen < minLetters) {
+      // sort letters by weight
+      const letterWeights = (letters || []).map((l) => [String(l[0]), Number(l[1])]).sort((a, b) => b[1] - a[1]);
+      for (const [lt, lc] of letterWeights) {
+        if (lettersChosen >= minLetters) break;
+        if (chosen.some((c) => String(c[0]) === lt)) continue;
+        // replace lowest-ranked non-letter if possible
+        const idx = chosen.map((c) => c[0]).reverse().findIndex((tok) => !letterSet.has(tok));
+        if (idx === -1) break;
+        const replaceIdx = chosen.length - 1 - idx;
+        chosen[replaceIdx] = [lt, lc];
+        lettersChosen++;
+      }
+    }
+
+    // Finally, if chosen less than maxTotal, pad with most common letters/words preserved order
+    const padCommon = [' ', 'e','t','a','o','i','n','s','r'];
+    let pi = 0;
+    while (chosen.length < maxTotal && pi < padCommon.length) {
+      const ch = padCommon[pi];
+      if (!chosen.some((c) => String(c[0]) === ch)) chosen.push([ch, 1]);
+      pi++;
+    }
+
+    return chosen.slice(0, maxTotal);
+  }
   function onSelect(item) {
     console.log("onSelect called with:", item);
     // item is [token, count]
@@ -364,17 +615,92 @@ export default function RadialPredictor() {
           return;
         }
 
-        // For normal text, query words endpoint with last two words as context
-        const ctx = t.trim();
-        if (ctx.length === 0) {
+        // For normal text: choose between prefix completions (in-word typing)
+        // and next-word predictions (when user just typed a space).
+        const ctxRaw = t;
+        if (ctxRaw.length === 0) {
           // no context, do nothing here (existing effect handles starter letters)
           return;
         }
-        const suggestions = await fetchWordsFromServer(ctx, 8);
-        if (!mounted) return;
-        const withCounts = suggestions.map((s, i) => [s[0], s[1] || (8 - i)]);
-        setCandidates(withCounts);
-        applyPredictions(withCounts.slice(0, 8));
+
+        const endsWithSpace = /\s$/.test(ctxRaw);
+        const parts = ctxRaw.trim().split(/\s+/).filter(Boolean);
+
+        const maxTotal = 8;
+
+        if (endsWithSpace) {
+          // user completed a word and expects next-word suggestions
+          const suggestions = await fetchWordsFromServer(ctxRaw.trim(), maxTotal);
+          if (!mounted) return;
+          const withCounts = suggestions.map((s, i) => [s[0], s[1] || (maxTotal - i)]);
+          // ensure a mix: prefer more words after a space but still include letters
+          const letterSlots = 3;
+          let letterSuggestions = [];
+          try {
+            const trimmed = ctxRaw.trim();
+            const lastChar = trimmed.slice(-1);
+            const lastTwo = trimmed.slice(-2);
+            if (letterTri && letterTri[lastTwo]) {
+              letterSuggestions = (letterTri[lastTwo] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            } else if (letterBi && letterBi[lastChar]) {
+              letterSuggestions = (letterBi[lastChar] || []).map((p) => Array.isArray(p) ? [String(p[0]), Number(p[1] || 0)] : [String(p), 0]);
+            }
+          } catch (e) {
+            letterSuggestions = [];
+          }
+          if (!letterSuggestions || letterSuggestions.length === 0) {
+            letterSuggestions = COMMON_LETTERS.map((ch, i) => [ch, 100 - i]);
+          }
+          // Merge and pick candidates by weight, prefer words but ensure at least 2 letters
+          const wordItems = withCounts;
+          const final = mergePick(wordItems, letterSuggestions, maxTotal, 2);
+          // Do NOT add space here because input already ends with a space
+          setCandidates(final.slice(0, maxTotal));
+          applyPredictions(final.slice(0, maxTotal));
+          return;
+        }
+
+        // In-word typing: use prefix completions for last token and derive allowed next letters
+        const lastToken = parts.length > 0 ? parts[parts.length - 1] : '';
+        if (lastToken) {
+          let words = await fetchPrefixFromServer(lastToken, 40); // request more to get a good letter distribution
+          if (!mounted) return;
+          // Filter out completions that exactly match what user already typed (we don't need that token)
+          try {
+            const lowerLast = String(lastToken || '').toLowerCase();
+            words = (words || []).filter((s) => String(s[0] || '').toLowerCase() !== lowerLast);
+          } catch (e) {
+            // noop
+          }
+          // words is array of [token, count] pairs from fetchPrefixFromServer
+          const wordItems = (words || []).map((s, i) => [s[0], s[1] || (40 - i)]);
+
+          // Derive next-letter distribution from the returned completions
+          const letterCounts = {};
+          const lowerPrefix = lastToken.toLowerCase();
+          for (const w of wordItems) {
+            const tok = String(w[0] || '').toLowerCase();
+            if (tok.length > lowerPrefix.length && tok.startsWith(lowerPrefix)) {
+              const nextCh = tok.charAt(lowerPrefix.length);
+              letterCounts[nextCh] = (letterCounts[nextCh] || 0) + (Number(w[1]) || 1);
+            }
+          }
+          let letterSuggestions = Object.entries(letterCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([ch, cnt]) => [ch, cnt]);
+
+          // Fallback if no letters from completions
+          if (!letterSuggestions || letterSuggestions.length === 0) {
+            letterSuggestions = COMMON_LETTERS.map((ch, i) => [ch, 100 - i]);
+          }
+
+          // Merge by weights and ensure a minimum number of letters (so not all words)
+          const final = mergePick(wordItems, letterSuggestions, maxTotal, 3);
+          if (!final.some((c) => c[0] === ' ')) final.unshift([' ', 1]);
+          setCandidates(final);
+          applyPredictions(final.slice(0, maxTotal));
+          return;
+        }
       } catch (err) {
         console.error('queryServer error', err);
       }
@@ -383,13 +709,20 @@ export default function RadialPredictor() {
     return () => { mounted = false; };
   }, [input]);
 
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    };
+  }, []);
+
   return (
     <div className="app-center">
       <div style={{ maxWidth: 520, margin: "1.5rem auto", textAlign: "center" }}>
         <div className="input-area" style={{ marginBottom: 12 }}>
         <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+          ref={inputRef}
+          value={previewActive ? previewValue : input}
+          onChange={(e) => { setInput(e.target.value); setPreviewActive(false); }}
           placeholder="Type here or tap predictions"
           style={{ width: "80%", padding: 8, fontSize: 18 }}
         />
@@ -399,7 +732,7 @@ export default function RadialPredictor() {
         </div>
       </div>
 
-      <div className="radial-grid" style={{ margin: "0 auto" }}>
+  <div ref={gridRef} className="radial-grid" style={{ margin: "0 auto" }}>
         {/* Render 9 grid cells (3x3). Center cell (index 4) is the input; other cells show predictions in order */}
         {Array.from({ length: 9 }).map((_, cellIndex) => (
           <React.Fragment key={cellIndex}>
@@ -407,7 +740,9 @@ export default function RadialPredictor() {
               <div key="center-input" className="radial-grid-cell radial-center-cell">
                 <button
                   className="radial-center-button"
-                  onClick={() => {
+                  onMouseEnter={() => scheduleShowHover(' ')}
+                  onMouseLeave={() => scheduleHideHover()}
+                  onClick={async () => {
                     const maxTotal = 8;
                     const visibleSet = new Set((predictions || []).map((p) => String(p[0])));
 
@@ -419,15 +754,72 @@ export default function RadialPredictor() {
                     const pool = (candidates || []).filter((p) => !visibleSet.has(String(p[0])) && !recentSet.has(String(p[0])));
 
                     let newPreds = [];
-                    if (pool.length >= maxTotal) {
-                      newPreds = shuffleArray(pool).slice(0, maxTotal);
-                    } else if (pool.length > 0) {
-                      newPreds = shuffleArray(pool).slice(0, maxTotal);
+                    const t = input || '';
+                    const endsWithSpace = /\s$/.test(t);
+                    if (!endsWithSpace) {
+                      // Mid-word: fetch fresh prefix completions and build a mixed set
+                      const parts = (t.trim().split(/\s+/).filter(Boolean));
+                      const lastToken = parts.length > 0 ? parts[parts.length - 1] : '';
+                      if (lastToken) {
+                        try {
+                          const srv = await fetchPrefixFromServer(lastToken, 128);
+                          // srv is array of [token, count]
+                          // 1) collect unseen word completions (prefer full words first)
+                          // Build weighted wordItems and letterItems from server completions
+                          const wordItems = [];
+                          const letterCounts = {};
+                          const seenTokens = new Set();
+                          for (let i = 0; i < (srv || []).length; i++) {
+                            const s = srv[i];
+                            const tok = String(s[0] || '');
+                            if (!tok) continue;
+                            // weight by inverse rank (higher rank -> larger weight)
+                            const weight = Number(s[1]) || Math.max(1, 128 - i);
+                            // only include unseen words (not visible/recent) as candidates
+                            if (!visibleSet.has(tok) && !recentSet.has(tok) && tok.length > 1 && !seenTokens.has(tok) && String(tok).toLowerCase() !== String(lastToken).toLowerCase()) {
+                              wordItems.push([tok, weight]);
+                              seenTokens.add(tok);
+                            }
+                            // aggregate letter counts for next character
+                            const lowerTok = tok.toLowerCase();
+                            if (lowerTok.length > lastToken.length && lowerTok.startsWith(lastToken.toLowerCase())) {
+                              const nextCh = lowerTok.charAt(lastToken.length);
+                              if (nextCh) {
+                                letterCounts[nextCh] = (letterCounts[nextCh] || 0) + weight;
+                              }
+                            }
+                          }
+                          const letterItems = Object.entries(letterCounts).sort((a,b)=>b[1]-a[1]).map(([ch,c])=>[ch,c]).filter(([ch])=>!recentSet.has(ch) && !visibleSet.has(ch));
+
+                          // Use mergePick to choose a balanced set (ensure minimum letters)
+                          newPreds = mergePick(wordItems, letterItems, maxTotal, 3);
+                        } catch (e) {
+                          console.error('shuffle prefix fetch error', e);
+                        }
+                      }
+                      // If fetch produced nothing useful, fall back to pool logic below
+                      if (!newPreds || newPreds.length === 0) {
+                        if (pool.length >= maxTotal) {
+                          newPreds = shuffleArray(pool).slice(0, maxTotal);
+                        } else if (pool.length > 0) {
+                          newPreds = shuffleArray(pool).slice(0, maxTotal);
+                        } else {
+                          const alphabet = 'etaoinshrdlcumwfgypbvkjxqz'.split('');
+                          const fresh = alphabet.filter((ch) => !recentSet.has(ch) && !visibleSet.has(ch)).map((ch) => [ch, 1]);
+                          newPreds = fresh.slice(0, maxTotal);
+                        }
+                      }
                     } else {
-                      // No unseen candidates available. Build fresh letter set excluding recent and visible tokens
-                      const alphabet = 'etaoinshrdlcumwfgypbvkjxqz'.split('');
-                      const fresh = alphabet.filter((ch) => !recentSet.has(ch) && !visibleSet.has(ch)).map((ch) => [ch, 1]);
-                      newPreds = fresh.slice(0, maxTotal);
+                      // Not mid-word: use pool first then fallback
+                      if (pool.length >= maxTotal) {
+                        newPreds = shuffleArray(pool).slice(0, maxTotal);
+                      } else if (pool.length > 0) {
+                        newPreds = shuffleArray(pool).slice(0, maxTotal);
+                      } else {
+                        const alphabet = 'etaoinshrdlcumwfgypbvkjxqz'.split('');
+                        const fresh = alphabet.filter((ch) => !recentSet.has(ch) && !visibleSet.has(ch)).map((ch) => [ch, 1]);
+                        newPreds = fresh.slice(0, maxTotal);
+                      }
                     }
 
                     // If still short, fill from candidates excluding visible tokens
@@ -485,10 +877,13 @@ export default function RadialPredictor() {
                   <div key={`word-${token}-${cellIndex}`} className="radial-grid-cell">
                     <button
                       onClick={() => onSelect(p)}
+                      onMouseEnter={() => scheduleShowHover(String(token))}
+                      onMouseLeave={() => scheduleHideHover()}
                       title={`Count: ${count}`}
                       aria-label={label}
                       className="radial-predictor-button radial-word-button"
                       data-rank={predIdx}
+                      data-token={String(token)}
                     >
                       {label}
                     </button>
@@ -500,9 +895,12 @@ export default function RadialPredictor() {
                 <div key={`let-${token}-${cellIndex}`} className="radial-grid-cell">
                   <button
                     onClick={() => onSelect(p)}
+                    onMouseEnter={() => scheduleShowHover(String(token))}
+                    onMouseLeave={() => scheduleHideHover()}
                     title={`Count: ${count}`}
                     className="radial-predictor-button radial-letter-button"
                     data-rank={predIdx}
+                    data-token={String(token)}
                   >
                     {token}
                   </button>

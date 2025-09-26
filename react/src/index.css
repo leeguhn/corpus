@@ -56,15 +56,17 @@ body {
 }
 
 .input-area {
-  width: 100%;
+  width: 63%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+
 }
 .input-area input {
-  width: 80%;
+
   max-width: 520px;
+  border-radius: 10px;
 }
 .input-controls {
   display: flex;
@@ -88,7 +90,7 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: black;
 }
 button:focus,
 button:focus-visible {
@@ -163,6 +165,40 @@ button:focus-visible {
   font-weight: 700;
 }
 
+/* Hovering state applied programmatically via JS: gives a distinct look for the center shuffle */
+.radial-center-button.hovering {
+  /* Only change the border color when hovering the center button */
+  border-color: #646cff;
+}
+
+/* Hovering state for the 8 suggestion keys (separate from global button:hover) */
+.radial-predictor-button.hovering {
+  /* Only change border color for suggestion keys; no lift/scale */
+  border-color: #535bf2 !important;
+}
+.radial-word-button.hovering {
+  border-color: #535bf2 !important;
+}
+.radial-letter-button.hovering {
+  border-color: #535bf2 !important;
+}
+
+/* Ensure hover visuals appear only while the cursor is over a key (no JS required)
+   These :hover rules use !important to override the default border set earlier so
+   the live hover is visible for radial keys, and they don't persist after mouseout. */
+.radial-predictor-button:hover,
+.radial-word-button:hover,
+.radial-letter-button:hover {
+  border-color: #535bf2 !important;
+}
+
+.radial-center-button:hover {
+  border-color: #646cff !important;
+}
+
+/* Smooth transitions for prediction grid updates to avoid flicker */
+
+
 /* Shuffle icon styling: provide a thin black border around the SVG */
 .shuffle-icon {
   display: inline-flex;
@@ -204,7 +240,7 @@ button:focus-visible {
 
 }
 .shuffle-icon.invert {
-  --_shuffle-icon-invert: 1;
+  --_shuffle-icon-invert: 0;
 }
 .shuffle-icon svg {
   filter: invert(var(--_shuffle-icon-invert)) hue-rotate(calc(var(--_shuffle-icon-invert) * 180deg));
