@@ -1,0 +1,327 @@
+INFO:     Started server process [27216]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+Loading precomputed data from C:\Users\leeguhn\Documents\corpus\corpus\predict_data
+Loaded data in 0.24 s
+INFO:     127.0.0.1:65511 - "GET /predict/words?context=in%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65511 - "GET /predict/digits?digits=843&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49156 - "GET /predict/words?context=s&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49156 - "GET /predict/words?context=s%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49156 - "GET /predict/words?context=s%20to%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49163 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49164 - "GET /predict/words?context=e%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49165 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and%20the%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and%20the%20is%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and%20the%20is%20in%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and%20the%20is%20in%20of%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and%20the%20is%20in%20of%20it%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and%20the%20is%20in%20of%20it%20and%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49166 - "GET /predict/words?context=e%20the%20and%20the%20is%20in%20of%20it%20and%20to%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49168 - "GET /predict/words?context=e%20the%20and%20the%20is%20in%20of%20it%20and%20to%20the%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49169 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49170 - "GET /predict/words?context=l&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49170 - "GET /predict/words?context=l%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49170 - "GET /predict/words?context=l%20and%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49170 - "GET /predict/words?context=l%20and%20of%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49170 - "GET /predict/words?context=l%20and%20of%20is%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49170 - "GET /predict/words?context=l%20and%20of%20is%20it%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49231 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49248 - "GET /predict/words?context=e%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49248 - "GET /predict/words?context=e%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49312 - "GET /predict/words?context=d&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49316 - "GET /predict/words?context=o&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49316 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49316 - "GET /predict/words?context=to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49316 - "GET /predict/words?context=to%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49316 - "GET /predict/words?context=to%20and%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49316 - "GET /predict/words?context=to%20and%20it%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49316 - "GET /predict/words?context=to%20and%20it%20is%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49316 - "GET /predict/words?context=to%20and%20it%20is%20of%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49390 - "GET /predict/words?context=o&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49390 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49392 - "GET /predict/words?context=oa&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49393 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49394 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49392 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49399 - "GET /predict/words?context=o&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49399 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49414 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49414 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49415 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49414 - "GET /predict/words?context=ta&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49414 - "GET /predict/words?context=ta%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49414 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49416 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49416 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49416 - "GET /predict/words?context=to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49416 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49416 - "GET /predict/words?context=a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49417 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49416 - "GET /predict/words?context=a%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49416 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49416 - "GET /predict/words?context=a%20of%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49416 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49419 - "GET /predict/words?context=a%20of%20to%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49420 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49419 - "GET /predict/words?context=a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49419 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49419 - "GET /predict/words?context=a%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49419 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49419 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49420 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49422 - "GET /predict/words?context=e%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49423 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49422 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49422 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49423 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49424 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49423 - "GET /predict/words?context=o&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49422 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49429 - "GET /predict/words?context=o%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49429 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49429 - "GET /predict/words?context=s&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49429 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49429 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49430 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49561 - "GET /predict/words?context=sa&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49561 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49561 - "GET /predict/words?context=sa%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49561 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49562 - "GET /predict/words?context=sa%20to%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49563 - "GET /predict/words?context=i&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49563 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49563 - "GET /predict/words?context=sa%20to%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49563 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49562 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49562 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49563 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49563 - "GET /predict/words?context=o&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49562 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49576 - "GET /predict/words?context=oa&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49576 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49586 - "GET /predict/words?context=oa%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49586 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49586 - "GET /predict/words?context=a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49586 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49601 - "GET /predict/words?context=a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49602 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49617 - "GET /predict/words?context=aa&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49617 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49619 - "GET /predict/words?context=aar&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49619 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49629 - "GET /predict/words?context=aar%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49629 - "GET /predict/words?context=aar%20the%20g&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49629 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49630 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49648 - "GET /predict/words?context=i&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49648 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49648 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49650 - "GET /predict/words?context=ia&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49650 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49648 - "GET /predict/words?context=ia%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49648 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49650 - "GET /predict/words?context=ia%20it%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49648 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49650 - "GET /predict/words?context=ia%20it%20is%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49650 - "GET /predict/words?context=ia%20it%20is%20in%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49650 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49650 - "GET /predict/words?context=ia%20it%20is%20in%20of%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49650 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49650 - "GET /predict/words?context=ia%20it%20is%20in%20of%20is%20a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49650 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49650 - "GET /predict/words?context=ia%20it%20is%20in%20of%20is%20a%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49654 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49654 - "GET /predict/words?context=ia%20it%20is%20in%20of%20is%20a%20it%20a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49654 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49656 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49654 - "GET /predict/words?context=ia%20it%20is%20in%20of%20is%20a%20it%20a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49656 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49654 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49656 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49654 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49656 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49654 - "GET /predict/words?context=r&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49656 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49654 - "GET /predict/words?context=r%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49707 - "GET /predict/words?context=er&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49708 - "GET /predict/words?context=erb&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49710 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49707 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49709 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49712 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49739 - "GET /predict/words?context=o&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49739 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49740 - "GET /predict/words?context=oa&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49743 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49744 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49741 - "GET /predict/words?context=oah&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49765 - "GET /predict/words?context=o&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49766 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49765 - "GET /predict/words?context=os&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49765 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49765 - "GET /predict/words?context=os%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49765 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49765 - "GET /predict/words?context=os%20to%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49765 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49765 - "GET /predict/words?context=os%20to%20to%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49769 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49783 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=tr&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49783 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=tr%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49784 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49784 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49784 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e%20of%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49783 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49784 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e%20of%20of%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e%20of%20of%20is%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49784 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e%20of%20of%20is%20in%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49783 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49784 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e%20of%20of%20is%20in%20it%20a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e%20of%20of%20is%20in%20it%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49784 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49783 - "GET /predict/words?context=e%20of%20of%20is%20in%20it%20and%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49784 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49819 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49819 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49819 - "GET /predict/words?context=e%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49819 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49819 - "GET /predict/words?context=e%20of%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49819 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49819 - "GET /predict/words?context=e%20of%20the%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49820 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49836 - "GET /predict/words?context=e%20of%20the%20to%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49836 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49965 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49965 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49965 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49965 - "GET /predict/words?context=a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49965 - "GET /predict/words?context=a%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49971 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49971 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49965 - "GET /predict/words?context=a%20is%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49971 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49965 - "GET /predict/words?context=a%20is%20it%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49965 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49971 - "GET /predict/words?context=a%20is%20it%20in%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49965 - "GET /predict/words?context=a%20is%20it%20in%20of%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49965 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49965 - "GET /predict/words?context=a%20is%20it%20in%20of%20to%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49965 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49965 - "GET /predict/words?context=a%20is%20it%20in%20of%20to%20the%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49965 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49999 - "GET /predict/words?context=t%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49999 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49999 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49999 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49999 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of%20to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of%20to%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of%20to%20and%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of%20to%20and%20it%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:49998 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of%20to%20and%20it%20is%20a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49998 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50001 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of%20to%20and%20it%20is%20a%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50001 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50002 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of%20to%20and%20it%20is%20a%20is%20l&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50005 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50003 - "GET /predict/words?context=t%20and%20a%20to%20of%20the%20to%20of%20is%20in%20of%20to%20and%20it%20is%20a%20is%20ly&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50006 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50001 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50004 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50002 - "GET /predict/words?context=t%20and&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50002 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50002 - "GET /predict/words?context=t%20and%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50004 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50002 - "GET /predict/words?context=t%20and%20it%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50004 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50002 - "GET /predict/words?context=t%20and%20it%20is%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50002 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50002 - "GET /predict/words?context=t%20and%20it%20is%20in%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50002 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50002 - "GET /predict/words?context=t%20and%20it%20is%20in%20of%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50002 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50002 - "GET /predict/words?context=t%20and%20it%20is%20in%20of%20of%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50002 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50007 - "GET /predict/words?context=t%20and%20it%20is%20in%20of%20of%20of%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50007 - "GET /predict/words?context=e&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50007 - "GET /predict/words?context=t%20and%20it%20is%20in%20of%20of%20of%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50007 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50007 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50008 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50026 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50027 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50043 - "GET /predict/words?context=to&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50043 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50043 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50043 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50043 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in%20in%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50043 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50043 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50043 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of%20in&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of%20in%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50042 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of%20in%20is%20a&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50042 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50045 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of%20in%20is%20a%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50045 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of%20in%20is%20a%20is%20%20%20t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50046 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of%20in%20is%20a%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50045 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of%20in%20is%20a%20is%20%20%20t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50046 - "GET /predict/words?context=to%20%20of%20in%20in%20is%20it%20is%20of%20in%20is%20a%20is&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50045 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50046 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50045 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50046 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50047 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50089 - "GET /predict/words?context=t&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50090 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50090 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50089 - "GET /predict/words?context=the&n=8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50090 - "OPTIONS /analytics/selection HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:50089 - "GET /predict/words?context=the%20and&n=8 HTTP/1.1" 200 OK

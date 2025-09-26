@@ -1,10 +1,28 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Shuffle } from 'lucide-react';
 
-// Helper to load JSON from public folder
-async function loadJson(filename) {
-  const res = await fetch(`/${filename}`);
-  return res.json();
+// Backend base URL (assumes predict_server.py runs on localhost:8000)
+// Prefer Vite env var (import.meta.env.VITE_PREDICTOR_URL). Access import.meta inside a try/catch
+// so that environments where import.meta isn't available won't throw.
+let BACKEND_BASE = '';
+try {
+  BACKEND_BASE = (import.meta && import.meta.env && import.meta.env.VITE_PREDICTOR_URL) || '';
+} catch (e) {
+  BACKEND_BASE = (typeof process !== 'undefined' && process.env && process.env.REACT_APP_PREDICTOR_URL) || '';
+}
+// Final fallback for dev if still empty
+if (!BACKEND_BASE) {
+  BACKEND_BASE = 'http://127.0.0.1:8000';
+}
+// Normalize
+BACKEND_BASE = BACKEND_BASE.replace(/\/$/, '');
+if (typeof window !== 'undefined') {
+  console.debug('[RadialPredictor] BACKEND_BASE =', BACKEND_BASE);
+}
+
+function backendUrl(path) {
+  if (BACKEND_BASE) return `${BACKEND_BASE.replace(/\/$/, '')}${path}`;
+  return path; // relative to same origin
 }
 
 // Numpad positions: center cell is input, surround with 8 positions like a phone numpad
@@ -39,23 +57,16 @@ export default function RadialPredictor() {
   const [wordVocab, setWordVocab] = useState(new Set());
   const [wordFreq, setWordFreq] = useState({});
 
+  // Lightweight fallbacks when server is unreachable or returns no suggestions
+  const COMMON_LETTERS = ['e','t','a','o','i','n','s','r'];
+  const COMMON_WORDS = ['the','to','and','of','a','in','is','it'];
+
   useEffect(() => {
-    loadJson("letter_bigram_next.json").then((d) => {
-      console.log("Loaded letterBi:", d);
-      setLetterBi(d);
-    }).catch((e) => {
-      console.error(e);
-      setLetterBi({});
-    });
-    loadJson("letter_trigram_next.json").then((d) => setLetterTri(d)).catch((e) => { console.error(e); setLetterTri({}); });
-    loadJson("word_bigram_next.json").then((d) => {
-      console.log("Loaded wordBi:", d);
-      setWordBi(d);
-    }).catch((e) => {
-      console.error(e);
-      setWordBi({});
-    });
-    loadJson("word_trigram_next.json").then((d) => { setWordTri(d); }).catch((e) => { console.error(e); setWordTri({}); });
+    // Do not preload large JSON into the client. The frontend will query the prediction server.
+    setLetterBi({});
+    setLetterTri({});
+    setWordBi({});
+    setWordTri({});
   }, []);
 
   // Build a simple vocabulary and frequency map from word bigram/trigram data for prefix completions
@@ -220,6 +231,8 @@ export default function RadialPredictor() {
 
   // Track recently shown tokens to avoid repeating them immediately on shuffle
   const recentlyShownRef = useRef([]);
+  const lastServerSuggestionsRef = useRef([]); // raw array of strings from backend
+  const lastServerSourceRef = useRef('');
   function applyPredictions(newPreds) {
     setPredictions(newPreds);
     try {
@@ -234,10 +247,71 @@ export default function RadialPredictor() {
 
   console.log("Rendering predictions:", predictions); // Debug log to check predictions before rendering
 
+  async function fetchWordsFromServer(context, n = 8) {
+    try {
+      const url = backendUrl(`/predict/words?context=${encodeURIComponent(context)}&n=${n}`);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(res.statusText);
+      const j = await res.json();
+      // server returns { suggestions: [str], source }
+      const sug = (j.suggestions || []);
+      lastServerSuggestionsRef.current = sug;
+      lastServerSourceRef.current = j.source || '';
+      if (!sug || sug.length === 0) {
+        // fallback to common words
+        return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
+      }
+      return sug.map((s) => [s, 1]);
+    } catch (err) {
+      console.error('fetchWordsFromServer error', err);
+      // return a small fallback set so UI isn't empty
+      return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
+    }
+  }
+
+  async function fetchDigitsFromServer(digits, n = 8) {
+    try {
+      const url = backendUrl(`/predict/digits?digits=${encodeURIComponent(digits)}&n=${n}`);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(res.statusText);
+      const j = await res.json();
+      const sug = (j.suggestions || []);
+      lastServerSuggestionsRef.current = sug;
+      lastServerSourceRef.current = j.source || '';
+      if (!sug || sug.length === 0) {
+        // fallback: return common words as placeholder
+        return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
+      }
+      return sug.map((s) => [s, 1]);
+    } catch (err) {
+      console.error('fetchDigitsFromServer error', err);
+      return COMMON_WORDS.slice(0, n).map((w, i) => [w, n - i]);
+    }
+  }
+
   function onSelect(item) {
     console.log("onSelect called with:", item);
     // item is [token, count]
     const token = item[0];
+
+    // Fire-and-forget analytics POST (non-blocking)
+    try {
+      const ctx = input;
+      const payload = {
+        context: ctx,
+        selected: token,
+        mode: /^[0-9]+$/.test(ctx.trim()) ? 'digits' : 'words',
+        candidates: (candidates || []).map(c => String(c[0])),
+        server_suggestions: lastServerSuggestionsRef.current || [],
+        server_source: lastServerSourceRef.current || '',
+        digits: /^[0-9]+$/.test(ctx.trim()) ? ctx.trim() : undefined,
+        ts: Date.now() / 1000.0,
+      };
+      const url = backendUrl('/analytics/selection');
+      fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {});
+    } catch (e) {
+      // ignore analytics errors
+    }
 
     // always handle explicit space token quickly
     if (token === " ") {
@@ -273,6 +347,41 @@ export default function RadialPredictor() {
       setInput((s) => s + ' ' + token + ' ');
     }
   }
+
+  // Whenever input changes, prefer server suggestions. For short inputs, keep local heuristics.
+  useEffect(() => {
+    let mounted = true;
+    async function queryServer() {
+      try {
+        const t = input || '';
+        // If user typed digits only (T9 mode), call digits endpoint
+        if (/^[0-9]+$/.test(t.trim())) {
+          const suggestions = await fetchDigitsFromServer(t.trim(), 8);
+          if (!mounted) return;
+          const withCounts = suggestions.map((s, i) => [s[0], s[1] || (8 - i)]);
+          setCandidates(withCounts);
+          applyPredictions(withCounts.slice(0, 8));
+          return;
+        }
+
+        // For normal text, query words endpoint with last two words as context
+        const ctx = t.trim();
+        if (ctx.length === 0) {
+          // no context, do nothing here (existing effect handles starter letters)
+          return;
+        }
+        const suggestions = await fetchWordsFromServer(ctx, 8);
+        if (!mounted) return;
+        const withCounts = suggestions.map((s, i) => [s[0], s[1] || (8 - i)]);
+        setCandidates(withCounts);
+        applyPredictions(withCounts.slice(0, 8));
+      } catch (err) {
+        console.error('queryServer error', err);
+      }
+    }
+    queryServer();
+    return () => { mounted = false; };
+  }, [input]);
 
   return (
     <div className="app-center">
@@ -358,7 +467,12 @@ export default function RadialPredictor() {
               const predIdx = gridOrder.indexOf(cellIndex);
               const p = predictions[predIdx];
               if (!p) {
-                return <div key={`empty-${cellIndex}`} className="radial-grid-cell" />;
+                // Render an inert, visually empty but present button so DOM structure stays stable.
+                return (
+                  <div key={`empty-${cellIndex}`} className="radial-grid-cell">
+                    <button className="radial-predictor-button radial-empty-button" disabled aria-hidden />
+                  </div>
+                );
               }
               const token = p[0];
               const count = p[1];
@@ -374,6 +488,7 @@ export default function RadialPredictor() {
                       title={`Count: ${count}`}
                       aria-label={label}
                       className="radial-predictor-button radial-word-button"
+                      data-rank={predIdx}
                     >
                       {label}
                     </button>
@@ -387,6 +502,7 @@ export default function RadialPredictor() {
                     onClick={() => onSelect(p)}
                     title={`Count: ${count}`}
                     className="radial-predictor-button radial-letter-button"
+                    data-rank={predIdx}
                   >
                     {token}
                   </button>
