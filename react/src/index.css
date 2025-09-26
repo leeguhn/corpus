@@ -154,6 +154,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative; /* container for absolute overlay buttons */
 }
 
 .radial-center-button {
@@ -245,6 +246,44 @@ button:focus-visible {
 }
 .shuffle-icon svg {
   filter: invert(var(--_shuffle-icon-invert)) hue-rotate(calc(var(--_shuffle-icon-invert) * 180deg));
+}
+
+/* Overlay controls (backspace/reset) shown during hold on center button */
+.overlay-layer {
+  position: relative;
+}
+.overlay-button {
+  /* match radial predictor button geometry and spacing */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px !important;
+  background: #fff !important;
+  color: #000 !important;
+  border: 2px solid #6a9 !important;
+  padding: 6px 10px !important;
+  font-weight: 700;
+  pointer-events: auto; /* enable interaction */
+  user-select: none;
+  width: 88px !important;
+  height: 64px !important;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.overlay-button.hovering {
+  border-color: #535bf2 !important;
+}
+.overlay-back {
+  /* match radial-letter-button tint */
+  background: skyblue !important;
+  color: #000 !important;
+  border-color: blue !important;
+}
+.overlay-reset {
+  /* use same base as radial-word (white) but emphasize with red border */
+  background: orange !important;
+  color: #000 !important;
+  border-color: #ff6b6b !important;
 }
 
 @media (prefers-color-scheme: light) {

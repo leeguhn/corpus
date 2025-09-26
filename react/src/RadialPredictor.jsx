@@ -400,6 +400,14 @@ export default function RadialPredictor() {
   const hoverHideTimeoutRef = useRef(null);
   const hoverElementRef = useRef(null);
   const mousePosRef = useRef({ x: 0, y: 0 });
+  const holdGlobalUpRef = useRef(null);
+  // Hold-to-show overlay state and refs
+  const [holdActive, setHoldActive] = useState(false);
+  const holdTimeoutRef = useRef(null);
+  const holdTriggeredRef = useRef(false);
+  const centerBtnRef = useRef(null);
+  const [overlayPos, setOverlayPos] = useState({ top: 0, left: 0, width: 88, height: 64, gap: 8 });
+  const [overlayHover, setOverlayHover] = useState(null); // 'back' | 'reset' | null
 
   // Debounced hover helpers to avoid flicker when moving quickly between keys
   const HOVER_SHOW_DELAY = 20; // ms
@@ -424,6 +432,8 @@ export default function RadialPredictor() {
       clearTimeout(hoverShowTimeoutRef.current);
       hoverShowTimeoutRef.current = null;
     }
+    // If we're currently in a hold overlay interaction, don't hide the preview
+    if (holdTriggeredRef.current || (typeof holdActive !== 'undefined' && holdActive)) return;
     if (hoverHideTimeoutRef.current) clearTimeout(hoverHideTimeoutRef.current);
     hoverHideTimeoutRef.current = setTimeout(() => {
       hoverHideTimeoutRef.current = null;
@@ -441,6 +451,110 @@ export default function RadialPredictor() {
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
+
+  useEffect(() => {
+    // recompute overlay position when holdActive toggles or on resize/scroll
+    function recompute() {
+      try {
+        const el = centerBtnRef.current;
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        // cell sizes are defined in CSS, but use actual element size for accuracy
+        const width = Math.round(r.width);
+        const height = Math.round(r.height);
+        // gap between grid cells as defined in CSS (.radial-grid gap: 8px)
+        const gap = 8;
+        const left = Math.round(r.left + r.width / 2 - width / 2);
+        const topCenter = Math.round(r.top);
+        setOverlayPos({ top: topCenter, left, width, height, gap });
+      } catch (e) {}
+    }
+    recompute();
+    window.addEventListener('resize', recompute);
+    window.addEventListener('scroll', recompute, true);
+    return () => { window.removeEventListener('resize', recompute); window.removeEventListener('scroll', recompute, true); };
+  }, [holdActive]);
+
+  // Helpers for hold/show behavior
+  const HOLD_DELAY = 250; // ms before overlay appears
+  function beginHold(e) {
+    try {
+      if (holdTimeoutRef.current) clearTimeout(holdTimeoutRef.current);
+      holdTriggeredRef.current = false;
+      // start a timer; if it fires, show the overlay
+      holdTimeoutRef.current = setTimeout(() => {
+        holdTimeoutRef.current = null;
+        holdTriggeredRef.current = true;
+        setHoldActive(true);
+        // install a global pointerup listener so release anywhere triggers endHold
+        if (!holdGlobalUpRef.current) {
+          holdGlobalUpRef.current = (ev) => {
+            try { endHold(ev, null); } catch (e) {}
+          };
+          window.addEventListener('pointerup', holdGlobalUpRef.current);
+          window.addEventListener('pointercancel', holdGlobalUpRef.current);
+        }
+      }, HOLD_DELAY);
+    } catch (err) {}
+  }
+
+  function cancelHold(e) {
+    if (holdTimeoutRef.current) { clearTimeout(holdTimeoutRef.current); holdTimeoutRef.current = null; }
+    holdTriggeredRef.current = false;
+    setHoldActive(false);
+    setOverlayHover(null);
+    try {
+      // remove any global pointerup listener installed during hold
+      if (holdGlobalUpRef.current) {
+        try { window.removeEventListener('pointerup', holdGlobalUpRef.current); window.removeEventListener('pointercancel', holdGlobalUpRef.current); } catch (e) {}
+        holdGlobalUpRef.current = null;
+      }
+    } catch (err) {}
+  }
+
+  // Called on pointer up of center button. If hold was not triggered, treat as a normal click (shuffle)
+  async function endHold(e, doShuffle) {
+    try {
+      if (holdTimeoutRef.current) { clearTimeout(holdTimeoutRef.current); holdTimeoutRef.current = null; }
+      const wasHold = holdTriggeredRef.current;
+      // remove global listener if present
+      if (holdGlobalUpRef.current) {
+        try { window.removeEventListener('pointerup', holdGlobalUpRef.current); window.removeEventListener('pointercancel', holdGlobalUpRef.current); } catch (e) {}
+        holdGlobalUpRef.current = null;
+      }
+
+      if (!wasHold) {
+        // normal click: run shuffle
+        if (typeof doShuffle === 'function') await doShuffle();
+        return;
+      }
+
+      // If hold was active and overlay visible, examine overlayHover to decide action
+      // overlayHover may be set by overlay pointer events; if not, fall back to checking pointer position
+      let resolved = overlayHover;
+      if (!resolved) {
+        try {
+          const mp = { x: (e && e.clientX) || mousePosRef.current.x, y: (e && e.clientY) || mousePosRef.current.y };
+          const el = document.elementFromPoint(mp.x, mp.y);
+          if (el) {
+            if (el.classList && el.classList.contains('overlay-back')) resolved = 'back';
+            if (el.classList && el.classList.contains('overlay-reset')) resolved = 'reset';
+          }
+        } catch (err) {}
+      }
+      if (resolved === 'back') {
+        setInput((s) => s.slice(0, -1));
+      } else if (resolved === 'reset') {
+        setInput("");
+      }
+    } finally {
+      holdTriggeredRef.current = false;
+      setHoldActive(false);
+      setOverlayHover(null);
+      // restore selection/caret
+      clearHoverPreview();
+    }
+  }
 
   console.log("Rendering predictions:", predictions); // Debug log to check predictions before rendering
 
@@ -852,8 +966,8 @@ export default function RadialPredictor() {
           style={{ width: "80%", padding: 8, fontSize: 18 }}
         />
         <div className="input-controls">
-          <button onClick={() => setInput((s) => s.slice(0, -1))}>Backspace</button>
-          <button onClick={() => setInput("")}>Reset</button>
+          <button onClick={() => setInput((s) => s.slice(0, -1))}>back</button>
+          <button onClick={() => setInput("")}>reset</button>
         </div>
       </div>
 
@@ -864,33 +978,27 @@ export default function RadialPredictor() {
             {cellIndex === 4 ? (
               <div key="center-input" className="radial-grid-cell radial-center-cell">
                 <button
-                  className="radial-center-button"
+                  ref={centerBtnRef}
+                  className={"radial-center-button" + (holdActive ? ' holding' : '')}
                   onMouseEnter={() => scheduleShowHover(' ')}
                   onMouseLeave={() => scheduleHideHover()}
-                  onClick={async () => {
+                  onPointerDown={(e) => beginHold(e)}
+                  onPointerUp={(e) => endHold(e, async () => {
+                    // original shuffle logic
                     const maxTotal = 8;
                     const visibleSet = new Set((predictions || []).map((p) => String(p[0])));
-
-                    // Build recent set from recentlyShownRef (use larger window)
                     const recent = recentlyShownRef.current || [];
                     const recentSet = new Set(recent.slice(-512).map(String));
-
-                    // Candidates not in recentSet and not visible
                     const pool = (candidates || []).filter((p) => !visibleSet.has(String(p[0])) && !recentSet.has(String(p[0])));
-
                     let newPreds = [];
                     const t = input || '';
                     const endsWithSpace = /\s$/.test(t);
                     if (!endsWithSpace) {
-                      // Mid-word: fetch fresh prefix completions and build a mixed set
                       const parts = (t.trim().split(/\s+/).filter(Boolean));
                       const lastToken = parts.length > 0 ? parts[parts.length - 1] : '';
                       if (lastToken) {
                         try {
                           const srv = await fetchPrefixFromServer(lastToken, 128);
-                          // srv is array of [token, count]
-                          // 1) collect unseen word completions (prefer full words first)
-                          // Build weighted wordItems and letterItems from server completions
                           const wordItems = [];
                           const letterCounts = {};
                           const seenTokens = new Set();
@@ -898,14 +1006,11 @@ export default function RadialPredictor() {
                             const s = srv[i];
                             const tok = String(s[0] || '');
                             if (!tok) continue;
-                            // weight by inverse rank (higher rank -> larger weight)
                             const weight = Number(s[1]) || Math.max(1, 128 - i);
-                            // only include unseen words (not visible/recent) as candidates
                             if (!visibleSet.has(tok) && !recentSet.has(tok) && tok.length > 1 && !seenTokens.has(tok) && String(tok).toLowerCase() !== String(lastToken).toLowerCase()) {
                               wordItems.push([tok, weight]);
                               seenTokens.add(tok);
                             }
-                            // aggregate letter counts for next character
                             const lowerTok = tok.toLowerCase();
                             if (lowerTok.length > lastToken.length && lowerTok.startsWith(lastToken.toLowerCase())) {
                               const nextCh = lowerTok.charAt(lastToken.length);
@@ -915,69 +1020,106 @@ export default function RadialPredictor() {
                             }
                           }
                           const letterItems = Object.entries(letterCounts).sort((a,b)=>b[1]-a[1]).map(([ch,c])=>[ch,c]).filter(([ch])=>!recentSet.has(ch) && !visibleSet.has(ch));
-
-                          // Use mergePick to choose a balanced set (ensure minimum letters)
                           newPreds = mergePick(wordItems, letterItems, maxTotal, 3);
-                        } catch (e) {
-                          console.error('shuffle prefix fetch error', e);
-                        }
+                        } catch (e) { console.error('shuffle prefix fetch error', e); }
                       }
-                      // If fetch produced nothing useful, fall back to pool logic below
                       if (!newPreds || newPreds.length === 0) {
-                        if (pool.length >= maxTotal) {
-                          newPreds = shuffleArray(pool).slice(0, maxTotal);
-                        } else if (pool.length > 0) {
-                          newPreds = shuffleArray(pool).slice(0, maxTotal);
-                        } else {
+                        if (pool.length >= maxTotal) newPreds = shuffleArray(pool).slice(0, maxTotal);
+                        else if (pool.length > 0) newPreds = shuffleArray(pool).slice(0, maxTotal);
+                        else {
                           const alphabet = 'etaoinshrdlcumwfgypbvkjxqz'.split('');
                           const fresh = alphabet.filter((ch) => !recentSet.has(ch) && !visibleSet.has(ch)).map((ch) => [ch, 1]);
                           newPreds = fresh.slice(0, maxTotal);
                         }
                       }
                     } else {
-                      // Not mid-word: use pool first then fallback
-                      if (pool.length >= maxTotal) {
-                        newPreds = shuffleArray(pool).slice(0, maxTotal);
-                      } else if (pool.length > 0) {
-                        newPreds = shuffleArray(pool).slice(0, maxTotal);
-                      } else {
+                      if (pool.length >= maxTotal) newPreds = shuffleArray(pool).slice(0, maxTotal);
+                      else if (pool.length > 0) newPreds = shuffleArray(pool).slice(0, maxTotal);
+                      else {
                         const alphabet = 'etaoinshrdlcumwfgypbvkjxqz'.split('');
                         const fresh = alphabet.filter((ch) => !recentSet.has(ch) && !visibleSet.has(ch)).map((ch) => [ch, 1]);
                         newPreds = fresh.slice(0, maxTotal);
                       }
                     }
-
-                    // If still short, fill from candidates excluding visible tokens
                     if (newPreds.length < maxTotal) {
                       const remaining = (candidates || []).filter((p) => !visibleSet.has(String(p[0])) && !newPreds.some((n) => n[0] === p[0]));
-                      for (const item of shuffleArray(remaining)) {
-                        if (newPreds.length >= maxTotal) break;
-                        newPreds.push(item);
-                      }
+                      for (const item of shuffleArray(remaining)) { if (newPreds.length >= maxTotal) break; newPreds.push(item); }
                     }
-
-                    // Final pad with space and common letters if needed (avoid duplicates)
-                    const padCommon = [' ', 'e','t','a','o','i','n','s','r'];
-                    let pi = 0;
-                    while (newPreds.length < maxTotal && pi < padCommon.length) {
-                      const ch = padCommon[pi];
-                      if (!newPreds.some((n) => String(n[0]) === ch)) newPreds.push([ch, 1]);
-                      pi++;
-                    }
-
-                    console.log('Shuffle selected newPreds:', newPreds.map((p) => p[0]));
-
-                    // Reorder candidates so newPreds are first
+                    const padCommon = [' ', 'e','t','a','o','i','n','s','r']; let pi = 0;
+                    while (newPreds.length < maxTotal && pi < padCommon.length) { const ch = padCommon[pi]; if (!newPreds.some((n) => String(n[0]) === ch)) newPreds.push([ch, 1]); pi++; }
                     const reordered = [...newPreds, ...(candidates || []).filter((c) => !newPreds.some((n) => n[0] === c[0]))];
                     setCandidates(reordered);
                     applyPredictions(newPreds);
-                  }}
+                  })}
                   title="Shuffle suggestions"
                 >
                   <span className="shuffle-icon invert" aria-hidden>
                     <Shuffle size={24} aria-label="Shuffle" />
                   </span>
                 </button>
+
+                {holdActive && (
+                  <div className="overlay-layer" style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                    {/* reset above the center button */}
+                    <div
+                      className={"overlay-button hold-top-action overlay-reset" + (overlayHover === 'reset' ? ' hovering' : '')}
+                      style={{
+                        position: 'absolute',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        top: `calc(-1 * (64px + 8px))`,
+                        pointerEvents: 'auto',
+                        zIndex: 999,
+                      }}
+                      onPointerEnter={() => {
+                        setOverlayHover('reset');
+                        try {
+                          const cur = input || '';
+                          const selStart = 0;
+                          const selEnd = cur.length;
+                          setPreviewValue(cur);
+                          setPreviewSel([selStart, selEnd]);
+                          setPreviewActive(true);
+                          setTimeout(() => { try { if (inputRef.current) { inputRef.current.focus(); inputRef.current.setSelectionRange(selStart, selEnd); } } catch (e) {} }, 0);
+                        } catch (e) {}
+                      }}
+                      onPointerMove={() => { setOverlayHover('reset'); }}
+                      onPointerLeave={() => { setOverlayHover(null); clearHoverPreview(); }}
+                    >
+                      reset
+                    </div>
+
+                    {/* back below the center button */}
+                    <div
+                      className={"overlay-button hold-bottom-action overlay-back" + (overlayHover === 'back' ? ' hovering' : '')}
+                      style={{
+                        position: 'absolute',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        top: `calc(100% + 8px)`,
+                        pointerEvents: 'auto',
+                        zIndex: 999,
+                      }}
+                      onPointerEnter={() => {
+                        setOverlayHover('back');
+                        try {
+                          const cur = input || '';
+                          if (!cur) return;
+                          const selStart = cur.length - 1;
+                          const selEnd = cur.length;
+                          setPreviewValue(cur);
+                          setPreviewSel([selStart, selEnd]);
+                          setPreviewActive(true);
+                          setTimeout(() => { try { if (inputRef.current) { inputRef.current.focus(); inputRef.current.setSelectionRange(selStart, selEnd); } } catch (e) {} }, 0);
+                        } catch (e) {}
+                      }}
+                      onPointerMove={() => { setOverlayHover('back'); }}
+                      onPointerLeave={() => { setOverlayHover(null); clearHoverPreview(); }}
+                    >
+                      back
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (() => {
               // Find which prediction should go into this cell (reverse map)
