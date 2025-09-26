@@ -393,6 +393,33 @@ export default function RadialPredictor() {
     }, 0);
   }
 
+  // Ensure selection highlight is shown reliably by deferring selection until after DOM update
+  function previewSelectRange(selStart, selEnd) {
+    try {
+      const cur = input || '';
+      setPreviewValue(cur);
+      setPreviewSel([selStart, selEnd]);
+      setPreviewActive(true);
+      // Defer to next frame to ensure DOM updated
+      setTimeout(() => {
+        try {
+          requestAnimationFrame(() => {
+            try {
+              if (inputRef.current) {
+                inputRef.current.focus();
+                inputRef.current.setSelectionRange(selStart, selEnd);
+                const sw = inputRef.current.scrollWidth || 0;
+                const cw = inputRef.current.clientWidth || 0;
+                if (sw > cw) inputRef.current.scrollLeft = Math.max(0, sw - cw);
+                try { inputRef.current.style.textAlign = ''; } catch (e) {}
+              }
+            } catch (e) {}
+          });
+        } catch (e) {}
+      }, 0);
+    } catch (e) {}
+  }
+
   const gridOrder = useMemo(() => getGridOrder(), []); // Ensure gridOrder is initialized
   const gridRef = useRef(null);
   const transitionTimeoutRef = useRef(null);
@@ -966,8 +993,7 @@ export default function RadialPredictor() {
           style={{ width: "80%", padding: 8, fontSize: 18 }}
         />
         <div className="input-controls">
-          <button onClick={() => setInput((s) => s.slice(0, -1))}>back</button>
-          <button onClick={() => setInput("")}>reset</button>
+          {/* back/reset handled via hold on center shuffle - external buttons removed */}
         </div>
       </div>
 
@@ -980,8 +1006,7 @@ export default function RadialPredictor() {
                 <button
                   ref={centerBtnRef}
                   className={"radial-center-button" + (holdActive ? ' holding' : '')}
-                  onMouseEnter={() => scheduleShowHover(' ')}
-                  onMouseLeave={() => scheduleHideHover()}
+                  /* no hover preview on center shuffle button to avoid moving caret */
                   onPointerDown={(e) => beginHold(e)}
                   onPointerUp={(e) => endHold(e, async () => {
                     // original shuffle logic
@@ -1074,13 +1099,7 @@ export default function RadialPredictor() {
                       onPointerEnter={() => {
                         setOverlayHover('reset');
                         try {
-                          const cur = input || '';
-                          const selStart = 0;
-                          const selEnd = cur.length;
-                          setPreviewValue(cur);
-                          setPreviewSel([selStart, selEnd]);
-                          setPreviewActive(true);
-                          setTimeout(() => { try { if (inputRef.current) { inputRef.current.focus(); inputRef.current.setSelectionRange(selStart, selEnd); } } catch (e) {} }, 0);
+                          previewSelectRange(0, (input || '').length);
                         } catch (e) {}
                       }}
                       onPointerMove={() => { setOverlayHover('reset'); }}
@@ -1103,14 +1122,8 @@ export default function RadialPredictor() {
                       onPointerEnter={() => {
                         setOverlayHover('back');
                         try {
-                          const cur = input || '';
-                          if (!cur) return;
-                          const selStart = cur.length - 1;
-                          const selEnd = cur.length;
-                          setPreviewValue(cur);
-                          setPreviewSel([selStart, selEnd]);
-                          setPreviewActive(true);
-                          setTimeout(() => { try { if (inputRef.current) { inputRef.current.focus(); inputRef.current.setSelectionRange(selStart, selEnd); } } catch (e) {} }, 0);
+                          if (!input || input.length === 0) return;
+                          previewSelectRange(input.length - 1, input.length);
                         } catch (e) {}
                       }}
                       onPointerMove={() => { setOverlayHover('back'); }}
