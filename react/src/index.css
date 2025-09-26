@@ -161,8 +161,8 @@ button:focus-visible {
   width: 92px;
   height: 63px;
   border-radius: 8px;
-  background: #e6ffe6 !important;
-  border: 2px solid #6a9;
+  background: lightgrey !important;
+  border: 2px solid gray;
   cursor: pointer;
   font-weight: 700;
 }
@@ -305,6 +305,53 @@ button:focus-visible {
   background: orange !important;
   color: #000 !important;
   border-color: #ff6b6b !important;
+}
+
+/* Capital letter overlay shown when holding a letter key */
+.overlay-capital {
+  background: #ffea7a !important; /* pale yellow */
+  color: #000 !important;
+  border-color: #d6b800 !important;
+  font-weight: 900 !important;
+  font-size: 24px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px !important;
+  height: 64px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12) !important;
+}
+
+
+/* Left/right caret move overlay buttons: visually match the center shuffle (gray) */
+.overlay-left,
+.overlay-right {
+  background: rgb(241, 241, 241) !important;
+  color: #000 !important;
+  border: 2px solid rgb(158, 156, 156) !important;
+  min-width: 48px;
+  min-height: 40px;
+  border-radius: 8px !important;
+  font-size: 18px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -44px;
+}
+
+/* Position helper to align left overlay to the center row left button exactly
+   We use transform translate for precise centering; JS places the container, CSS just ensures look */
+.hold-left-action {
+  touch-action: none; /* prevent default gestures (scroll) while interacting */
+  -webkit-user-select: none;
+  user-select: none;
+}
+.hold-right-action {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 @media (prefers-color-scheme: light) {
