@@ -1,6 +1,17 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Shuffle } from 'lucide-react';
 
+// Small inline Spacebar SVG icon (from user-provided snippet)
+const SpacebarIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} fill={"currentColor"} viewBox="0 0 24 24" {...props}>
+    {/* Boxicons v3.0 https://boxicons.com | License  https://docs.boxicons.com/free */}
+    <path d="m18,13H6v-4h-2v5c0,.55.45,1,1,1h14c.55,0,1-.45,1-1v-5h-2v4Z"></path>
+  </svg>
+);
+
+// Try to dynamically load CoreUI CIcon and the cisSpaceBar icon at runtime.
+// (Previously supported CoreUI dynamic loading — removed in favor of inline SVG)
+
 // Backend base URL (assumes predict_server.py runs on localhost:8000)
 // Prefer Vite env var (import.meta.env.VITE_PREDICTOR_URL). Access import.meta inside a try/catch
 // so that environments where import.meta isn't available won't throw.
@@ -981,6 +992,26 @@ export default function RadialPredictor() {
     };
   }, []);
 
+  // Ensure space token, if present in current predictions, is rendered only at bottom-row center cell.
+  // This only affects rendering order; the underlying `predictions` state is unchanged.
+  const renderPreds = useMemo(() => {
+    try {
+      const arr = (predictions || []).slice(0, 8);
+      // Determine where the bottom-center cell maps into predictions array
+      const targetCellIndex = 7; // bottom row, center cell
+      const targetPredIdx = gridOrder.indexOf(targetCellIndex);
+      const spaceIdx = arr.findIndex((p) => p && String(p[0]) === ' ');
+      if (spaceIdx !== -1 && targetPredIdx !== -1 && spaceIdx !== targetPredIdx) {
+        const [spaceItem] = arr.splice(spaceIdx, 1);
+        // insert at targetPredIdx (may shift other items)
+        arr.splice(targetPredIdx, 0, spaceItem);
+      }
+      return arr.slice(0, 8);
+    } catch (e) {
+      return (predictions || []).slice(0, 8);
+    }
+  }, [predictions, gridOrder]);
+
   return (
     <div className="app-center">
       <div style={{ maxWidth: 520, margin: "1.5rem auto", textAlign: "center" }}>
@@ -1137,7 +1168,7 @@ export default function RadialPredictor() {
             ) : (() => {
               // Find which prediction should go into this cell (reverse map)
               const predIdx = gridOrder.indexOf(cellIndex);
-              const p = predictions[predIdx];
+              const p = renderPreds[predIdx];
               if (!p) {
                 // Render an inert, visually empty but present button so DOM structure stays stable.
                 return (
@@ -1165,7 +1196,13 @@ export default function RadialPredictor() {
                       data-rank={predIdx}
                       data-token={String(token)}
                     >
-                      {label}
+                      {isSpace ? (
+                        <span className="space-icon" aria-hidden>
+                          <SpacebarIcon width={20} height={20} />
+                        </span>
+                      ) : (
+                        label
+                      )}
                     </button>
                   </div>
                 );
@@ -1182,7 +1219,11 @@ export default function RadialPredictor() {
                     data-rank={predIdx}
                     data-token={String(token)}
                   >
-                    {token}
+                    {isSpace ? (
+                      <span className="space-icon" aria-hidden>
+                        <SpacebarIcon width={20} height={20} />
+                      </span>
+                    ) : token}
                   </button>
                 </div>
               );

@@ -248,6 +248,27 @@ button:focus-visible {
   filter: invert(var(--_shuffle-icon-invert)) hue-rotate(calc(var(--_shuffle-icon-invert) * 180deg));
 }
 
+/* Space icon styling: mirrors .shuffle-icon but allows configurable size via --space-icon-size */
+.space-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 3px;
+  /* default size can be overridden: e.g. .space-icon { --space-icon-size: 18px } */
+  --space-icon-size: 27px;
+  width: var(--space-icon-size);
+  height: var(--space-icon-size);
+  border-radius: 3px;
+  box-sizing: content-box;
+  /* reuse shuffle invert custom property for consistent theming */
+  --_shuffle-icon-invert: var(--shuffle-icon-invert, 0);
+}
+.space-icon svg {
+  width: 100%;
+  height: 100%;
+  filter: invert(var(--_shuffle-icon-invert)) hue-rotate(calc(var(--_shuffle-icon-invert) * 180deg));
+}
+
 /* Overlay controls (backspace/reset) shown during hold on center button */
 .overlay-layer {
   position: relative;
