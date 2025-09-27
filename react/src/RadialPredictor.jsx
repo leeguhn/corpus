@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { Shuffle } from 'lucide-react';
+import { Shuffle, ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Small inline Spacebar SVG icon (from user-provided snippet)
 const SpacebarIcon = (props) => (
@@ -56,6 +56,30 @@ function scaleSizes(counts, minSize = 40, maxSize = 90) {
   });
 }
 
+// Letter variants mapping for accent characters
+const LETTER_VARIANTS = {
+  'a': ['á', 'à', 'â', 'ä', 'ã', 'å', 'æ'],
+  'e': ['é', 'è', 'ê', 'ë', 'ē', 'ė', 'ę'],
+  'i': ['í', 'ì', 'î', 'ï', 'ī', 'į', 'ı'],
+  'o': ['ó', 'ò', 'ô', 'ö', 'õ', 'ø', 'œ'],
+  'u': ['ú', 'ù', 'û', 'ü', 'ū', 'ů', 'ų'],
+  'n': ['ñ', 'ń', 'ň', 'ņ'],
+  'c': ['ç', 'ć', 'č', 'ĉ'],
+  's': ['ş', 'ś', 'š', 'ŝ'],
+  'z': ['ž', 'ź', 'ż', 'ẑ'],
+  'l': ['ł', 'ĺ', 'ľ', 'ļ'],
+  'r': ['ř', 'ŕ', 'ŗ'],
+  'd': ['đ', 'ď', 'ḑ'],
+  'g': ['ğ', 'ģ', 'ġ'],
+  'h': ['ħ', 'ĥ'],
+  'j': ['ĵ'],
+  'k': ['ķ', 'ĸ'],
+  'p': ['þ'],
+  't': ['ţ', 'ť', 'ŧ'],
+  'w': ['ŵ'],
+  'y': ['ý', 'ÿ', 'ŷ']
+};
+
 export default function RadialPredictor() {
   const [input, setInput] = useState("");
   const inputRef = useRef(null);
@@ -71,6 +95,12 @@ export default function RadialPredictor() {
   const [wordTri, setWordTri] = useState(null);
   const [wordVocab, setWordVocab] = useState(new Set());
   const [wordFreq, setWordFreq] = useState({});
+
+  // Letter variant holding state
+  const [letterHoldActive, setLetterHoldActive] = useState(false);
+  const [heldLetter, setHeldLetter] = useState('');
+  const [heldLetterButton, setHeldLetterButton] = useState(null); // button element reference
+  const [variantHover, setVariantHover] = useState(''); // which variant is being hovered
 
   // Lightweight fallbacks when server is unreachable or returns no suggestions
   const COMMON_LETTERS = ['e','t','a','o','i','n','s','r'];
@@ -445,7 +475,7 @@ export default function RadialPredictor() {
   const holdTriggeredRef = useRef(false);
   const centerBtnRef = useRef(null);
   const [overlayPos, setOverlayPos] = useState({ top: 0, left: 0, width: 88, height: 64, gap: 8 });
-  const [overlayHover, setOverlayHover] = useState(null); // 'back' | 'reset' | null
+  const [overlayHover, setOverlayHover] = useState(null); // 'back' | 'reset' | 'left' | 'right' | null
 
   // Debounced hover helpers to avoid flicker when moving quickly between keys
   const HOVER_SHOW_DELAY = 20; // ms
@@ -489,6 +519,65 @@ export default function RadialPredictor() {
     window.addEventListener('mousemove', onMove);
     return () => window.removeEventListener('mousemove', onMove);
   }, []);
+
+  // Letter variant hold functions
+  const letterHoldTimeoutRef = useRef(null);
+  const letterHoldTriggeredRef = useRef(false);
+  const LETTER_HOLD_DELAY = 200; // Reduced delay for faster response
+
+  function beginLetterHold(letter, buttonElement) {
+    console.log('beginLetterHold called for:', letter); // Debug log
+    letterHoldTriggeredRef.current = false;
+    
+    if (letterHoldTimeoutRef.current) {
+      clearTimeout(letterHoldTimeoutRef.current);
+    }
+    
+    letterHoldTimeoutRef.current = setTimeout(() => {
+      console.log('Hold timeout triggered for:', letter); // Debug log
+      // Show capital letter for ANY single letter, regardless of whether it has variants
+      letterHoldTriggeredRef.current = true;
+      setLetterHoldActive(true);
+      setHeldLetter(letter.toLowerCase());
+      setHeldLetterButton(buttonElement);
+      // Show uppercase in preview
+      const previewText = input + letter.toUpperCase();
+      setPreviewActive(true);
+      setPreviewValue(previewText);
+      setPreviewSel([input.length, previewText.length]);
+      letterHoldTimeoutRef.current = null;
+    }, LETTER_HOLD_DELAY);
+  }
+
+  function cancelLetterHold() {
+    console.log('cancelLetterHold called'); // Debug log
+    if (letterHoldTimeoutRef.current) {
+      clearTimeout(letterHoldTimeoutRef.current);
+      letterHoldTimeoutRef.current = null;
+    }
+    letterHoldTriggeredRef.current = false;
+    setLetterHoldActive(false);
+    setHeldLetter('');
+    setHeldLetterButton(null);
+    setVariantHover('');
+    clearHoverPreview();
+  }
+
+  function handleVariantHover(variant) {
+    setVariantHover(variant);
+    if (variant) {
+      const previewText = input + variant;
+      setPreviewActive(true);
+      setPreviewValue(previewText);
+      setPreviewSel([input.length, previewText.length]);
+    }
+  }
+
+  function selectVariant(variant) {
+    const newInput = input + variant;
+    setInput(newInput);
+    cancelLetterHold();
+  }
 
   useEffect(() => {
     // recompute overlay position when holdActive toggles or on resize/scroll
@@ -1139,6 +1228,50 @@ export default function RadialPredictor() {
                       reset
                     </div>
 
+                    {/* left arrow to the left of the center button */}
+                    <div
+                      className={"overlay-button hold-left-action overlay-left" + (overlayHover === 'left' ? ' hovering' : '')}
+                      style={{
+                        position: 'absolute',
+                        left: `calc(-1 * (88px + 8px))`,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        pointerEvents: 'auto',
+                        zIndex: 999,
+                      }}
+                      onPointerEnter={() => {
+                        setOverlayHover('left');
+                      }}
+                      onPointerMove={() => { setOverlayHover('left'); }}
+                      onPointerLeave={() => { setOverlayHover(null); clearHoverPreview(); }}
+                    >
+                      <span className="shuffle-icon invert" aria-hidden>
+                        <ArrowLeft size={24} aria-label="Move Left" />
+                      </span>
+                    </div>
+
+                    {/* right arrow to the right of the center button */}
+                    <div
+                      className={"overlay-button hold-right-action overlay-right" + (overlayHover === 'right' ? ' hovering' : '')}
+                      style={{
+                        position: 'absolute',
+                        left: `calc(100% + 8px)`,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        pointerEvents: 'auto',
+                        zIndex: 999,
+                      }}
+                      onPointerEnter={() => {
+                        setOverlayHover('right');
+                      }}
+                      onPointerMove={() => { setOverlayHover('right'); }}
+                      onPointerLeave={() => { setOverlayHover(null); clearHoverPreview(); }}
+                    >
+                      <span className="shuffle-icon invert" aria-hidden>
+                        <ArrowRight size={24} aria-label="Move Right" />
+                      </span>
+                    </div>
+
                     {/* back below the center button */}
                     <div
                       className={"overlay-button hold-bottom-action overlay-back" + (overlayHover === 'back' ? ' hovering' : '')}
@@ -1162,6 +1295,130 @@ export default function RadialPredictor() {
                     >
                       back
                     </div>
+
+                    {/* Corner overlay buttons */}
+                    {/* Top-left: Numbers (123) - Yellow */}
+                    <div
+                      className="corner-button corner-top-left"
+                      style={{
+                        position: 'absolute',
+                        left: `calc(var(--corner-offset-x, 0px) - 96px)`, // -88px button width - 8px gap
+                        top: `calc(var(--corner-offset-y, 0px) - 72px)`, // -64px button height - 8px gap  
+                        pointerEvents: 'auto',
+                        zIndex: 999,
+                      }}
+                    >
+                      <button className="radial-predictor-button radial-yellow-button radial-corner-button">
+                        123
+                      </button>
+                    </div>
+
+                    {/* Top-right: Special characters (!@#) - Yellow */}
+                    <div
+                      className="corner-button corner-top-right"
+                      style={{
+                        position: 'absolute',
+                        left: `calc(var(--corner-offset-x, 0px) + 96px)`, // +88px button width + 8px gap
+                        top: `calc(var(--corner-offset-y, 0px) - 72px)`, // -64px button height - 8px gap
+                        pointerEvents: 'auto',
+                        zIndex: 999,
+                      }}
+                    >
+                      <button className="radial-predictor-button radial-yellow-button radial-corner-button">
+                        !@#
+                      </button>
+                    </div>
+
+                    {/* Bottom-left: Emoji (😊) - Yellow */}
+                    <div
+                      className="corner-button corner-bottom-left"
+                      style={{
+                        position: 'absolute',
+                        left: `calc(var(--corner-offset-x, 0px) - 96px)`, // -88px button width - 8px gap
+                        top: `calc(var(--corner-offset-y, 0px) + 72px)`, // +64px button height + 8px gap
+                        pointerEvents: 'auto',
+                        zIndex: 999,
+                      }}
+                    >
+                      <button className="radial-predictor-button radial-yellow-button radial-corner-button">
+                        😊
+                      </button>
+                    </div>
+
+                    {/* Bottom-right: Submit - Green */}
+                    <div
+                      className="corner-button corner-bottom-right"
+                      style={{
+                        position: 'absolute',
+                        left: `calc(var(--corner-offset-x, 0px) + 96px)`, // +88px button width + 8px gap
+                        top: `calc(var(--corner-offset-y, 0px) + 72px)`, // +64px button height + 8px gap
+                        pointerEvents: 'auto',
+                        zIndex: 999,
+                      }}
+                    >
+                      <button className="radial-predictor-button radial-green-button radial-corner-button">
+                        submit
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Letter variant overlay - appears when holding a letter button */}
+                {letterHoldActive && heldLetterButton && LETTER_VARIANTS[heldLetter] && (
+                  <div className="letter-variant-layer" style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                    {LETTER_VARIANTS[heldLetter].slice(0, Math.min(predictions.length, 8)).map((variant, index) => {
+                      // Only show variants where there are actual prediction buttons
+                      if (index >= predictions.length) return null;
+                      
+                      const gridOrder = [0, 1, 2, 3, 5, 6, 7, 8]; // skip center (4)
+                      const gridPosition = gridOrder[index];
+                      if (gridPosition === undefined) return null;
+
+                      // Calculate offset from center like corner buttons do
+                      const row = Math.floor(gridPosition / 3);
+                      const col = gridPosition % 3;
+                      const centerRow = 1, centerCol = 1;
+                      
+                      // Double check we're within grid bounds
+                      if (row < 0 || row > 2 || col < 0 || col > 2) return null;
+                      
+                      // Find which prediction position contains the held letter and skip that position
+                      const heldLetterPredIndex = predictions.findIndex(p => 
+                        String(p[0]).toLowerCase() === heldLetter.toLowerCase()
+                      );
+                      
+                      // If this variant would appear in the same position as the held letter, skip it
+                      if (index === heldLetterPredIndex) return null;
+                      
+                      const offsetX = (col - centerCol) * (88 + 8); // button width + gap
+                      const offsetY = (row - centerRow) * (64 + 8); // button height + gap
+
+                      return (
+                        <div
+                          key={`variant-${variant}-${index}`}
+                          className="variant-button-wrapper"
+                          style={{
+                            position: 'absolute',
+                            left: `calc(50% + ${offsetX}px - 44px)`, // center and offset by half button width
+                            top: `calc(50% + ${offsetY}px - 32px)`, // center and offset by half button height
+                            pointerEvents: 'auto',
+                            zIndex: 1000,
+                          }}
+                        >
+                          <button 
+                            className="radial-predictor-button radial-mint-button radial-variant-button"
+                            onPointerEnter={() => handleVariantHover(variant)}
+                            onPointerUp={() => selectVariant(variant)}
+                            style={{
+                              width: '88px',
+                              height: '64px'
+                            }}
+                          >
+                            {variant}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1190,7 +1447,6 @@ export default function RadialPredictor() {
                       onClick={() => onSelect(p)}
                       onMouseEnter={() => scheduleShowHover(String(token))}
                       onMouseLeave={() => scheduleHideHover()}
-                      title={`Count: ${count}`}
                       aria-label={label}
                       className="radial-predictor-button radial-word-button"
                       data-rank={predIdx}
@@ -1211,11 +1467,55 @@ export default function RadialPredictor() {
               return (
                 <div key={`let-${token}-${cellIndex}`} className="radial-grid-cell">
                   <button
-                    onClick={() => onSelect(p)}
-                    onMouseEnter={() => scheduleShowHover(String(token))}
-                    onMouseLeave={() => scheduleHideHover()}
-                    title={`Count: ${count}`}
-                    className="radial-predictor-button radial-letter-button"
+                    ref={(el) => {
+                      // Store button reference for letter hold functionality
+                      if (el && letterHoldActive && heldLetter === token.toLowerCase()) {
+                        setHeldLetterButton(el);
+                      }
+                    }}
+                    onClick={(e) => {
+                      // Prevent normal click if we triggered hold mode
+                      if (letterHoldTriggeredRef.current) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                      }
+                      onSelect(p);
+                    }}
+                    onMouseEnter={() => {
+                      if (!letterHoldActive) {
+                        scheduleShowHover(String(token));
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (!letterHoldActive) {
+                        scheduleHideHover();
+                      }
+                    }}
+                    onPointerDown={(e) => {
+                      // Check if this is a single letter that can have variants
+                      if (String(token).length === 1 && /[a-z]/i.test(token)) {
+                        console.log('Pointer down on letter:', token); // Debug log
+                        beginLetterHold(String(token), e.currentTarget);
+                      }
+                    }}
+                    onPointerUp={(e) => {
+                      console.log('Pointer up, letterHoldActive:', letterHoldActive, 'triggered:', letterHoldTriggeredRef.current); // Debug log
+                      if (letterHoldActive || letterHoldTimeoutRef.current) {
+                        // If we were in hold mode but didn't select a variant, just add the base letter
+                        if (letterHoldTriggeredRef.current && !variantHover) {
+                          const newInput = input + heldLetter.toUpperCase();
+                          setInput(newInput);
+                        }
+                        cancelLetterHold();
+                      }
+                    }}
+                    onPointerCancel={() => {
+                      cancelLetterHold();
+                    }}
+                    className={`radial-predictor-button radial-letter-button ${
+                      letterHoldActive && heldLetter === token.toLowerCase() ? 'radial-mint-button held' : ''
+                    }`}
                     data-rank={predIdx}
                     data-token={String(token)}
                   >
@@ -1223,7 +1523,12 @@ export default function RadialPredictor() {
                       <span className="space-icon" aria-hidden>
                         <SpacebarIcon width={20} height={20} />
                       </span>
-                    ) : token}
+                    ) : (
+                      // Show uppercase when held, normal case otherwise
+                      letterHoldActive && heldLetter === token.toLowerCase() 
+                        ? token.toUpperCase() 
+                        : token
+                    )}
                   </button>
                 </div>
               );

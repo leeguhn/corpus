@@ -298,31 +298,14 @@ button:focus-visible {
   /* match radial-letter-button tint */
   background: skyblue !important;
   color: #000 !important;
-  border-color: blue !important;
+  border-color: rgb(125, 209, 243) !important;
 }
 .overlay-reset {
   /* use same base as radial-word (white) but emphasize with red border */
   background: orange !important;
   color: #000 !important;
-  border-color: #ff6b6b !important;
+  border-color: rgb(249, 169, 19) !important;
 }
-
-/* Capital letter overlay shown when holding a letter key */
-.overlay-capital {
-  background: #ffea7a !important; /* pale yellow */
-  color: #000 !important;
-  border-color: #d6b800 !important;
-  font-weight: 900 !important;
-  font-size: 24px !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 88px !important;
-  height: 64px !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.12) !important;
-}
-
 
 /* Left/right caret move overlay buttons: visually match the center shuffle (gray) */
 .overlay-left,
@@ -338,7 +321,7 @@ button:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: -44px;
+  margin-left: 0px;
 }
 
 /* Position helper to align left overlay to the center row left button exactly
@@ -365,4 +348,48 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Adjust arrow icon positioning in overlay buttons */
+.overlay-left .shuffle-icon,
+.overlay-right .shuffle-icon {
+  margin-top: 0px; /* shift up by reducing margin-top from 6px to 2px */
+}
+
+/* Special corner button styles */
+.radial-yellow-button {
+  background: #ffd700 !important; /* Gold/Yellow */
+  color: #000 !important;
+  border: 2px solid #e6c200 !important;
+}
+
+.radial-green-button {
+  background: #4caf50 !important; /* Green */
+  color: black !important;
+  border: 2px solid #45a049 !important;
+}
+
+.radial-corner-button {
+  font-weight: bold;
+  font-size: 14px;
+  border-radius: 7px;
+}
+
+/* Mint color for letter variant buttons */
+.radial-mint-button {
+  background: #98fb98 !important; /* Mint green */
+  color: #000 !important;
+  border: 2px solid #90ee90 !important;
+  border-radius: 8px;
+}
+
+.radial-variant-button {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Held letter button styling */
+.radial-letter-button.held {
+  font-weight: bold;
+  font-size: 18px;
 }
