@@ -9,25 +9,27 @@ Usage (PowerShell):
 Options:
   -InstallDeps : install pip requirements before starting (default: $false)
   -Port <int>  : backend port (default 8000)
-  -ReactDir    : path to react folder (default './react')
+  -ReactDir    : path to the frontend folder under keypad (default 'frontend')
 
 #>
 
 param(
     [switch]$InstallDeps = $false,
     [int]$Port = 8000,
-    [string]$ReactDir = "react"
+    [string]$ReactDir = "frontend"
 )
 
 Set-StrictMode -Version Latest
 
 function Write-Log($m) { Write-Host "[start_all] $m" }
 
-$root = Split-Path -Parent $MyInvocation.MyCommand.Path
-Push-Location $root
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$keypadRoot = Split-Path -Parent $scriptDir
+$backendDir = Join-Path $keypadRoot 'backend'
+Push-Location $keypadRoot
 
 # Create venv if missing
-$venvPath = Join-Path $root '.venv'
+$venvPath = Join-Path $keypadRoot '.venv'
 if (-not (Test-Path $venvPath)) {
     Write-Log "Creating virtual environment at $venvPath"
     python -m venv $venvPath
@@ -44,29 +46,32 @@ Write-Log "Activating venv"
 . $activate
 
 if ($InstallDeps) {
-    if (Test-Path requirements.txt) {
-        Write-Log "Installing dependencies from requirements.txt"
+    $requirements = Join-Path $backendDir 'requirements.txt'
+    if (Test-Path $requirements) {
+        Write-Log "Installing dependencies from $requirements"
         pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r $requirements
     } else {
         Write-Log "requirements.txt not found, installing minimal server deps"
         pip install fastapi uvicorn pydantic
     }
 }
 
-# Start backend in background and capture logs
-$logDir = Join-Path $root 'logs'
+# Start backend in background and capture stdout/stderr separately.
+$logDir = Join-Path $keypadRoot 'logs'
 if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }
-$backendLog = Join-Path $logDir "backend.log"
+$backendOutLog = Join-Path $logDir "backend.stdout.log"
+$backendErrorLog = Join-Path $logDir "backend.stderr.log"
 
-Write-Log "Starting backend on port $Port (logs -> $backendLog)"
+Write-Log "Starting backend on port $Port (logs -> $logDir)"
 
 # Use Start-Process to launch python predict_server.py using venv python
 $pythonExe = Join-Path $venvPath 'Scripts\python.exe'
 if (-not (Test-Path $pythonExe)) { $pythonExe = 'python' }
 
 # Pass dynamic port to backend (predict_server.py now supports --port)
-$backendArgs = "predict_server.py --port $Port"
+$backendScript = Join-Path $backendDir 'predict_server.py'
+$backendArgs = "`"$backendScript`" --port $Port"
 
 # If a process is already listening on the port, warn but continue
 try {
@@ -74,25 +79,19 @@ try {
     if ($listening) { Write-Log "Port $Port already in use, backend may already be running." }
 } catch { }
 
-# Use cmd.exe to redirect both stdout and stderr into a single log file (Windows Start-Process doesn't allow same file for both redirects)
-$cmdLine = "`"$pythonExe`" $backendArgs > `"$backendLog`" 2>&1"
-Start-Process -FilePath "cmd.exe" -ArgumentList '/c', $cmdLine -WindowStyle Hidden -PassThru | Out-Null
+Start-Process -FilePath $pythonExe -ArgumentList $backendArgs -WindowStyle Hidden -PassThru `
+    -RedirectStandardOutput $backendOutLog -RedirectStandardError $backendErrorLog | Out-Null
 
 # Set env var for React to call backend
 $backendUrl = "http://127.0.0.1:$Port"
-$env:REACT_APP_PREDICTOR_URL = $backendUrl
-Write-Log "Set REACT_APP_PREDICTOR_URL = $backendUrl"
+$env:VITE_PREDICTOR_URL = $backendUrl
+Write-Log "Set VITE_PREDICTOR_URL = $backendUrl for the Vite process"
 
 # Start React dev server in foreground so logs are visible
 if (-not (Test-Path $ReactDir)) { Write-Error "React directory '$ReactDir' not found"; exit 1 }
 
 Push-Location $ReactDir
 Write-Log "Starting React dev server in '$ReactDir'"
-
-# Ensure Vite can see the backend URL via react/.env
-$envFile = Join-Path (Get-Location) '.env'
-Write-Log "Writing VITE_PREDICTOR_URL to $envFile"
-"VITE_PREDICTOR_URL=$backendUrl" | Out-File -Encoding ASCII -FilePath $envFile
 
 # If node_modules not present, run npm install (use npm.cmd on Windows to avoid the PowerShell wrapper issues)
 $npmCmd = 'npm.cmd'
@@ -104,5 +103,5 @@ if (-not (Test-Path 'node_modules')) {
 Write-Log "Running: npm run dev"
 & $npmCmd run dev
 
-Pop-Location # react
-Pop-Location # root
+Pop-Location # frontend
+Pop-Location # keypad

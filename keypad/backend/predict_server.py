@@ -23,7 +23,7 @@ from starlette.responses import Response
 import re
 
 ROOT = os.path.dirname(__file__)
-DATA_DIR = os.path.join(ROOT, 'predict_data')
+DATA_DIR = os.path.abspath(os.path.join(ROOT, '..', 'prediction-data'))
 
 
 def _load_pickle(name: str):
@@ -42,7 +42,7 @@ try:
     TRIE_TOPK = _load_pickle('trie_topk.pkl')
     VOCAB_FREQ = _load_pickle('vocab_freq.pkl')
 except Exception as e:
-    raise RuntimeError('Missing predict_data. Run precompute_topn.py first') from e
+    raise RuntimeError('Missing prediction-data artifacts. Run precompute_topn.py first') from e
 print('Loaded data in %.2f s' % (time.time() - start))
 
 app = FastAPI(title='Predictor Demo')

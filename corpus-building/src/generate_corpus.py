@@ -5,7 +5,7 @@ Generate ~1M words of text locally from a model, clean, tokenize,
 and build bigram/trigram frequency tables.
 
 Usage examples:
-python generate_corpus.py --model-path ./local-model --target-words 1000000 \
+python src/generate_corpus.py --model-path ./local-model --api-url "" --target-words 1000000 \
     --chunk-words 2000 --output-raw data/raw.txt --output-ngrams data/ngrams
 
 The script supports local Hugging Face compatible models (path or model id),
@@ -27,6 +27,15 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Iterable, List, Tuple
 from datetime import datetime
+
+try:
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig
+except ImportError:
+    torch = None
+    AutoModelForCausalLM = None
+    AutoTokenizer = None
+    GenerationConfig = None
 
 # Attempt to import tqdm; provide a fallback if unavailable
 try:
@@ -94,7 +103,7 @@ def ensure_dir_for_file(path: str) -> None:
 
 
 def load_generator(model_path: str, device: int, temperature: float, top_p: float, top_k: int):
-    if AutoModelForCausalLM is None:
+    if AutoModelForCausalLM is None or AutoTokenizer is None or GenerationConfig is None or torch is None:
         raise RuntimeError("transformers/torch not available. Install requirements.txt")
 
     logging.info('Loading tokenizer and model from %s', model_path)

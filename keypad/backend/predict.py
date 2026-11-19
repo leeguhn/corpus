@@ -2,10 +2,17 @@ import json
 import os
 from typing import List, Union
 
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+KEYPAD_DIR = os.path.dirname(BACKEND_DIR)
+FRONTEND_PUBLIC_DIR = os.path.join(KEYPAD_DIR, "frontend", "public")
+
 
 def _load_json_anywhere(basename: str):
-    # try cwd first, then react/public, then current file dir
-    candidates = [basename, os.path.join('react', 'public', basename), os.path.join(os.path.dirname(__file__), basename)]
+    # Prefer the keypad's canonical assets; retain the backend directory as a legacy fallback.
+    candidates = [
+        os.path.join(FRONTEND_PUBLIC_DIR, basename),
+        os.path.join(BACKEND_DIR, basename),
+    ]
     for p in candidates:
         if os.path.exists(p):
             with open(p, 'r', encoding='utf-8') as f:

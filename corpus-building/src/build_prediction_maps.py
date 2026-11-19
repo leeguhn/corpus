@@ -2,9 +2,14 @@ import os
 import re
 import json
 from collections import Counter, defaultdict
+from pathlib import Path
 
 # Folder containing your text files
-FOLDER_PATH = "/Users/leeguhn/Desktop/bundle/hansel/corpus"  # Use current directory containing corpus files
+SCRIPT_DIR = Path(__file__).resolve().parent
+CORPUS_BUILDING_DIR = SCRIPT_DIR.parent
+PROJECT_ROOT = CORPUS_BUILDING_DIR.parent
+FOLDER_PATH = str(CORPUS_BUILDING_DIR / "source-texts")
+OUTPUT_DIR = PROJECT_ROOT / "keypad" / "frontend" / "public"
 
 def load_and_clean_text(folder_path):
     text = ""
@@ -67,6 +72,11 @@ def build_next_word_structure(word_bigram_counts, word_trigram_counts):
         word_trigram_next[k] = sorted(word_trigram_next[k], key=lambda x: -x[1])
     return word_bigram_next, word_trigram_next
 
+
+def serialize_word_trigram_map(word_trigram_next):
+    """Convert tuple contexts to the space-joined keys used by the runtime API."""
+    return {" ".join(context): values for context, values in word_trigram_next.items()}
+
 if __name__ == "__main__":
     text = load_and_clean_text(FOLDER_PATH)
     bigram_counts, trigram_counts = compute_bigrams_trigrams(text)
@@ -76,15 +86,16 @@ if __name__ == "__main__":
     word_bigram_counts, word_trigram_counts = compute_word_ngrams(words)
     word_bigram_next, word_trigram_next = build_next_word_structure(word_bigram_counts, word_trigram_counts)
 
-    # Save all n-gram data to JSON files
-    with open("letter_bigram_next.json", "w") as f:
+    # Save the lookup maps where the keypad's preprocessing and frontend expect them.
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    with open(OUTPUT_DIR / "letter_bigram_next.json", "w") as f:
         json.dump({k: v for k, v in bigram_next.items()}, f)
-    with open("letter_trigram_next.json", "w") as f:
+    with open(OUTPUT_DIR / "letter_trigram_next.json", "w") as f:
         json.dump({k: v for k, v in trigram_next.items()}, f)
-    with open("word_bigram_next.json", "w") as f:
+    with open(OUTPUT_DIR / "word_bigram_next.json", "w") as f:
         json.dump({k: v for k, v in word_bigram_next.items()}, f)
-    with open("word_trigram_next.json", "w") as f:
-        json.dump({str(k): v for k, v in word_trigram_next.items()}, f)
+    with open(OUTPUT_DIR / "word_trigram_next.json", "w") as f:
+        json.dump(serialize_word_trigram_map(word_trigram_next), f)
 
     # Example: top 5 next letters after 't'
     print("Top 5 bigram next letters after 't':", bigram_next.get('t', [])[:5])

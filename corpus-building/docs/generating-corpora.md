@@ -1,4 +1,4 @@
-# generate_corpus.py
+# Generating Corpora
 
 This script generates a large corpus (target ~1,000,000 words) using a local
 Hugging Face compatible causal language model, cleans the output, tokenizes it,
@@ -9,23 +9,22 @@ Quickstart
 - Install dependencies: `pip install -r requirements.txt`
 - Run generation (example):
 
-```powershell
-python generate_corpus.py --model-path PATH_TO_MODEL --target-words 1000000 \
-  --chunk-words 2000 --output-raw data/raw.txt --output-ngrams data/ngrams
+```bash
+python src/generate_corpus.py --model-path PATH_TO_MODEL --api-url "" --target-words 1000000 --chunk-words 2000 --output-raw data/raw.txt --output-ngrams data/ngrams
 ```
 
 Or use an LM Studio-compatible HTTP API:
 
 ```powershell
-python generate_corpus.py --api-url http://127.0.0.1:1234/v1/completions --api-model gpt-oss-20b `
-  --target-words 1000000 --chunk-words 2000 --output-raw data/raw.txt --output-ngrams data/ngrams
+python src/generate_corpus.py --api-url http://127.0.0.1:1234/v1/completions --api-model gpt-oss-20b --target-words 1000000 --chunk-words 2000 --output-raw data/raw.txt --output-ngrams data/ngrams
 ```
 
 Notes
 
 - The script expects a local model directory or a model id that `transformers`
   can load. Running on CPU will be slow; prefer a CUDA-enabled PyTorch build
-  and set `--device 0` for GPU.
+  and set `--device 0` for GPU. Pass `--api-url ""` to select local-model mode;
+  the nonempty default selects the LM Studio endpoint.
 - The script writes raw generated text incrementally to avoid memory issues,
   then reads it back to build n-grams. If you want to skip generation and only
   process an existing file, run `process_raw_to_ngrams` by editing the script

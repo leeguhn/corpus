@@ -1,6 +1,6 @@
 """Precompute top-N context maps and a prefix trie with top-K completions.
 
-Creates a small `predict_data` folder with:
+Creates a small `prediction-data` folder with:
 - word_bigram_topn.pkl (dict: word -> [next_word,...])
 - word_trigram_topn.pkl (dict: "w1 w2" -> [next_word,...])
 - trie_topk.pkl (prefix trie where each node has 'top' list)
@@ -15,14 +15,20 @@ import pickle
 from collections import Counter
 from typing import Dict, List, Tuple
 
-# Config
-DATA_DIR = "predict_data"
+# Paths and configuration
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+KEYPAD_DIR = os.path.dirname(BACKEND_DIR)
+FRONTEND_PUBLIC_DIR = os.path.join(KEYPAD_DIR, "frontend", "public")
+DATA_DIR = os.path.join(KEYPAD_DIR, "prediction-data")
 CONTEXT_N = 12
 TRIE_K = 20
 
 
 def _load_json_anywhere(basename: str):
-    candidates = [basename, os.path.join('react', 'public', basename), os.path.join(os.path.dirname(__file__), basename)]
+    candidates = [
+        os.path.join(FRONTEND_PUBLIC_DIR, basename),
+        os.path.join(BACKEND_DIR, basename),
+    ]
     for p in candidates:
         if os.path.exists(p):
             with open(p, 'r', encoding='utf-8') as f:
